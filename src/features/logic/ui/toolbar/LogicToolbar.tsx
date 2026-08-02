@@ -5,6 +5,7 @@ import { logicService } from '../../services/LogicService';
 import { graphManager } from '../../graph/GraphManager';
 import { useLogicStore } from '../../../../stores/LogicStore';
 import { screenManager } from '../../../../application/screens/ScreenManager';
+import { projectModelExporter } from '../../../../application/ir/ProjectModelExporter';
 
 export const LogicToolbar: React.FC = () => {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -25,6 +26,17 @@ export const LogicToolbar: React.FC = () => {
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const handleExportIR = () => {
+    const irJson = projectModelExporter.exportJSONString();
+    const blob = new Blob([irJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `visualstack_project_ir_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleClearCanvas = () => {
@@ -60,107 +72,100 @@ export const LogicToolbar: React.FC = () => {
         {/* Divider */}
         <div className="h-5 w-[1px] bg-[#232733]" />
 
-        {/* Current Screen Selector Dropdown */}
+        {/* Interactive Screen Selector */}
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] hover:border-indigo-500/50 text-white text-xs font-medium transition-all cursor-pointer shadow-sm"
+            className="px-3 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-xs font-medium text-gray-200 flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <Icons.Monitor size={13} className="text-indigo-400" />
-            <span className="text-gray-400 text-[10px] uppercase font-semibold tracking-wider">Screen:</span>
-            <span className="text-white font-semibold">{activeScreen ? activeScreen.name : 'Select Screen'}</span>
-            {activeScreen?.route && (
-              <span className="text-[10px] font-mono text-gray-400 bg-[#0e0f12] px-1.5 py-0.5 rounded border border-[#232733]">
-                {activeScreen.route.path}
-              </span>
-            )}
-            <Icons.ChevronDown size={13} className={`text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <span className="text-gray-400">Screen:</span>
+            <span className="font-semibold text-indigo-400">{activeScreen?.name}</span>
+            <span className="text-[10px] font-mono text-gray-400 bg-[#0e0f12] px-1.5 py-0.5 rounded">
+              {activeScreen?.route.path}
+            </span>
+            <Icons.ChevronDown size={14} className="text-gray-400 ml-1" />
           </button>
 
-          {/* Screen Options Menu */}
           {isDropdownOpen && (
-            <div className="absolute left-0 mt-1.5 w-64 bg-[#14161d] border border-[#232733] rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              <div className="px-3 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-[#232733] mb-1">
-                Designed Frontend Screens ({screens.length})
+            <div className="absolute top-full left-0 mt-1 w-64 bg-[#14161d] border border-[#232733] rounded-lg shadow-xl py-1 z-50 box-border">
+              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-gray-400 border-b border-[#232733]">
+                Designed Screens ({screens.length})
               </div>
-
               <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {screens.map((scr) => {
-                  const isSelected = scr.id === activeScreenId;
-                  return (
-                    <button
-                      key={scr.id}
-                      onClick={() => handleSelectScreen(scr.id)}
-                      className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors cursor-pointer ${
-                        isSelected ? 'bg-indigo-600/20 text-white font-semibold' : 'text-gray-300 hover:bg-[#181a20] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate pr-2">
-                        <Icons.Layout size={13} className={isSelected ? 'text-indigo-400' : 'text-gray-500'} />
-                        <span className="truncate">{scr.name}</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-gray-500 shrink-0">{scr.route.path}</span>
-                    </button>
-                  );
-                })}
+                {screens.map((scr) => (
+                  <button
+                    key={scr.id}
+                    onClick={() => handleSelectScreen(scr.id)}
+                    className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-[#181a26] transition-colors cursor-pointer ${
+                      scr.id === activeScreenId ? 'text-indigo-400 font-semibold bg-[#181a26]' : 'text-gray-300'
+                    }`}
+                  >
+                    <span>{scr.name}</span>
+                    <span className="text-[10px] font-mono text-gray-400">{scr.route.path}</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Execution Actions */}
+      {/* Primary Actions (Run Logic, Export IR, Canvas Controls) */}
       <div className="flex items-center gap-2">
         <button
           onClick={handleRunGraph}
           disabled={isRunning}
-          className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-medium flex items-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer"
+          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-2 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
         >
           {isRunning ? (
-            <>
-              <Icons.Loader size={13} className="animate-spin" />
-              <span>Running...</span>
-            </>
+            <Icons.RefreshCw className="animate-spin" size={14} />
           ) : (
-            <>
-              <Icons.Play size={13} className="fill-current" />
-              <span>Run Logic</span>
-            </>
+            <Icons.Play size={14} className="fill-white" />
           )}
+          <span>{isRunning ? 'Executing...' : 'Run Logic'}</span>
+        </button>
+
+        <button
+          onClick={handleExportIR}
+          className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+          title="Export Project IR JSON Model"
+        >
+          <Icons.Download size={14} />
+          <span>Export IR JSON</span>
         </button>
 
         <button
           onClick={handleClearCanvas}
-          className="p-1.5 rounded bg-[#181a20] hover:bg-[#232733] text-gray-400 hover:text-red-400 text-xs border border-[#232733] transition-colors cursor-pointer"
-          title="Clear Graph"
+          className="p-1.5 rounded hover:bg-[#181a20] text-gray-400 hover:text-white transition-colors cursor-pointer"
+          title="Clear Canvas"
         >
-          <Icons.Trash2 size={13} />
+          <Icons.Trash2 size={15} />
         </button>
-      </div>
 
-      {/* Viewport Zoom Controls */}
-      <div className="flex items-center gap-1 bg-[#181a20] p-1 rounded border border-[#232733]">
-        <button
-          onClick={() => zoomIn()}
-          className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#232733] transition-colors cursor-pointer"
-          title="Zoom In"
-        >
-          <Icons.ZoomIn size={13} />
-        </button>
-        <button
-          onClick={() => zoomOut()}
-          className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#232733] transition-colors cursor-pointer"
-          title="Zoom Out"
-        >
-          <Icons.ZoomOut size={13} />
-        </button>
-        <button
-          onClick={() => fitView({ padding: 0.2, duration: 400 })}
-          className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#232733] transition-colors cursor-pointer"
-          title="Fit View"
-        >
-          <Icons.Maximize2 size={13} />
-        </button>
+        {/* Viewport Zoom Controls */}
+        <div className="flex items-center gap-0.5 bg-[#181a20] border border-[#232733] rounded p-0.5 ml-2">
+          <button
+            onClick={() => zoomIn()}
+            className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#232733] transition-colors cursor-pointer"
+            title="Zoom In"
+          >
+            <Icons.ZoomIn size={14} />
+          </button>
+          <button
+            onClick={() => zoomOut()}
+            className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#232733] transition-colors cursor-pointer"
+            title="Zoom Out"
+          >
+            <Icons.ZoomOut size={14} />
+          </button>
+          <button
+            onClick={() => fitView()}
+            className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#232733] transition-colors cursor-pointer"
+            title="Fit View"
+          >
+            <Icons.Maximize2 size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
