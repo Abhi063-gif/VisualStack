@@ -8,11 +8,16 @@ import { authManager } from '../../../../application/resources/AuthManager';
 import { storageManager } from '../../../../application/resources/StorageManager';
 import { apiManager } from '../../../../application/resources/APIManager';
 import { environmentManager } from '../../../../application/resources/EnvironmentManager';
+import { ResourceModal, type ResourceModalType } from './ResourceModal';
 
 export const NodePalette: React.FC = () => {
   const [leftTab, setLeftTab] = useState<'library' | 'resources'>('library');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<NodeCategory | 'All'>('All');
+  const [modalType, setModalType] = useState<ResourceModalType>(null);
+  const [, setRefreshTick] = useState(0);
+
+  const triggerRefresh = () => setRefreshTick((t) => t + 1);
 
   const filteredNodes = searchQuery.trim()
     ? searchNodes(searchQuery)
@@ -33,6 +38,13 @@ export const NodePalette: React.FC = () => {
 
   return (
     <div className="w-full h-full bg-[#0e0f12] border-r border-[#232733] flex flex-col select-none relative shrink-0 overflow-hidden box-border">
+      {/* Interactive Credential Config Modal */}
+      <ResourceModal
+        type={modalType}
+        onClose={() => setModalType(null)}
+        onSaved={triggerRefresh}
+      />
+
       {/* Top Left Panel Selector Tabs */}
       <div className="flex border-b border-[#232733] bg-[#11131c] px-2 shrink-0 justify-between items-center">
         <button
@@ -62,13 +74,20 @@ export const NodePalette: React.FC = () => {
                 <Icons.Database size={14} className="text-cyan-400" />
                 <span>Databases</span>
               </div>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
-                {dbConnections.length} Connected
-              </span>
+              <button
+                onClick={() => setModalType('database')}
+                className="text-[9px] font-mono px-2 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Icons.Plus size={10} /> + Add DB
+              </button>
             </div>
 
             {dbConnections.map((db) => (
-              <div key={db.id} className="p-2 bg-[#181a20] border border-[#232733] rounded space-y-1.5">
+              <div
+                key={db.id}
+                onClick={() => setModalType('database')}
+                className="p-2 bg-[#181a20] border border-[#232733] hover:border-cyan-500/50 rounded space-y-1.5 cursor-pointer transition-all"
+              >
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-semibold text-white truncate">{db.name}</span>
                   <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded">
@@ -89,13 +108,20 @@ export const NodePalette: React.FC = () => {
                 <Icons.ShieldCheck size={14} className="text-purple-400" />
                 <span>Authentication</span>
               </div>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-950 text-purple-400 border border-purple-800">
-                {authConfigs.length} Provider
-              </span>
+              <button
+                onClick={() => setModalType('auth')}
+                className="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-950 hover:bg-purple-900 text-purple-400 border border-purple-800 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Icons.Plus size={10} /> + Add Auth
+              </button>
             </div>
 
             {authConfigs.map((auth) => (
-              <div key={auth.id} className="p-2 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between text-[11px]">
+              <div
+                key={auth.id}
+                onClick={() => setModalType('auth')}
+                className="p-2 bg-[#181a20] border border-[#232733] hover:border-purple-500/50 rounded flex items-center justify-between text-[11px] cursor-pointer transition-all"
+              >
                 <span className="font-semibold text-white">{auth.name}</span>
                 <span className="text-[9px] font-mono text-purple-300 uppercase">{auth.provider}</span>
               </div>
@@ -109,13 +135,20 @@ export const NodePalette: React.FC = () => {
                 <Icons.HardDrive size={14} className="text-emerald-400" />
                 <span>Storage Buckets</span>
               </div>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-                {storageBuckets.length} Bucket
-              </span>
+              <button
+                onClick={() => setModalType('storage')}
+                className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Icons.Plus size={10} /> + Bucket
+              </button>
             </div>
 
             {storageBuckets.map((st) => (
-              <div key={st.id} className="p-2 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between text-[11px]">
+              <div
+                key={st.id}
+                onClick={() => setModalType('storage')}
+                className="p-2 bg-[#181a20] border border-[#232733] hover:border-emerald-500/50 rounded flex items-center justify-between text-[11px] cursor-pointer transition-all"
+              >
                 <span className="font-semibold text-white truncate">{st.name}</span>
                 <span className="text-[9px] font-mono text-emerald-400">{st.bucketName}</span>
               </div>
@@ -129,13 +162,20 @@ export const NodePalette: React.FC = () => {
                 <Icons.Globe size={14} className="text-orange-400" />
                 <span>External APIs</span>
               </div>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-orange-950 text-orange-400 border border-orange-800">
-                {apis.length} Active
-              </span>
+              <button
+                onClick={() => setModalType('api')}
+                className="text-[9px] font-mono px-2 py-0.5 rounded bg-orange-950 hover:bg-orange-900 text-orange-400 border border-orange-800 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Icons.Plus size={10} /> + API
+              </button>
             </div>
 
             {apis.map((api) => (
-              <div key={api.id} className="p-2 bg-[#181a20] border border-[#232733] rounded space-y-1">
+              <div
+                key={api.id}
+                onClick={() => setModalType('api')}
+                className="p-2 bg-[#181a20] border border-[#232733] hover:border-orange-500/50 rounded space-y-1 cursor-pointer transition-all"
+              >
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-semibold text-white truncate">{api.name}</span>
                   <span className="text-[9px] font-mono text-orange-400 font-bold">{api.method}</span>
@@ -152,13 +192,20 @@ export const NodePalette: React.FC = () => {
                 <Icons.Key size={14} className="text-amber-400" />
                 <span>Environment Secrets</span>
               </div>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-950 text-amber-400 border border-amber-800">
-                {envVars.length} Variables
-              </span>
+              <button
+                onClick={() => setModalType('env')}
+                className="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-950 hover:bg-amber-900 text-amber-400 border border-amber-800 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Icons.Plus size={10} /> + Secret
+              </button>
             </div>
 
             {envVars.map((env) => (
-              <div key={env.key} className="p-1.5 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between text-[10px] font-mono">
+              <div
+                key={env.key}
+                onClick={() => setModalType('env')}
+                className="p-1.5 bg-[#181a20] border border-[#232733] hover:border-amber-500/50 rounded flex items-center justify-between text-[10px] font-mono cursor-pointer transition-all"
+              >
                 <span className="text-indigo-400 font-semibold truncate">{env.key}</span>
                 <span className="text-gray-400 font-sans">{env.isSecret ? '••••••••' : env.value}</span>
               </div>
