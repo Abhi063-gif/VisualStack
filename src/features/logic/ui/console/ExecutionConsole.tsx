@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useLogicStore } from '../../../../stores/LogicStore';
 import { screenManager } from '../../../../application/screens/ScreenManager';
+import { architectureValidator } from '../../../../application/engines/ArchitectureValidator';
 
 type BottomTab =
   | 'logs'
@@ -21,12 +22,20 @@ export const ExecutionConsole: React.FC = () => {
   const [isSimulating, setIsSimulating] = useState(false);
 
   const activeScreen = screenManager.getActiveScreen();
+  const validationIssues = architectureValidator.validateFullProject();
 
   const filteredLogs =
     filterLevel === 'all' ? executionLogs : executionLogs.filter((log) => log.level === filterLevel);
 
-  const errors = executionLogs.filter((l) => l.level === 'error');
-  const warnings = executionLogs.filter((l) => l.level === 'warn');
+  const errors = [
+    ...executionLogs.filter((l) => l.level === 'error').map((l) => ({ id: l.id, message: l.message })),
+    ...validationIssues.filter((i) => i.type === 'error').map((i) => ({ id: i.id, message: i.message })),
+  ];
+
+  const warnings = [
+    ...executionLogs.filter((l) => l.level === 'warn').map((l) => ({ id: l.id, message: l.message })),
+    ...validationIssues.filter((i) => i.type === 'warning').map((i) => ({ id: i.id, message: i.message })),
+  ];
 
   return (
     <div className="w-full h-full bg-[#0c0d12] border-t border-[#232733] flex flex-col select-none overflow-hidden box-border">
