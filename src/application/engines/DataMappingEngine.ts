@@ -30,12 +30,34 @@ export class DataMappingEngine {
     });
   }
 
+  /**
+   * Automatically adapts and infers bindings when canvas wires or UI components are connected.
+   */
+  public autoDetectBindings(sourceId: string, targetId: string, sourcePortName: string, targetPortName: string): DataBindingRule {
+    const bindingId = `auto_bind_${sourceId}_${targetId}_${Date.now()}`;
+    const autoRule: DataBindingRule = {
+      id: bindingId,
+      sourceType: sourceId.startsWith('btn') || sourceId.startsWith('input') ? 'component_input' : 'node_output',
+      sourcePath: `${sourceId}.${sourcePortName}`,
+      targetType: 'node_input',
+      targetPath: `${targetId}.${targetPortName}`,
+      transformExpression: `{{ ${sourceId}.${sourcePortName} }}`,
+    };
+
+    this.registerBinding(autoRule);
+    return autoRule;
+  }
+
   public registerBinding(rule: DataBindingRule): void {
     this.bindings.set(rule.id, rule);
   }
 
   public getBindings(): DataBindingRule[] {
     return Array.from(this.bindings.values());
+  }
+
+  public removeBinding(id: string): boolean {
+    return this.bindings.delete(id);
   }
 }
 
