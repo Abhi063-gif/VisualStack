@@ -3,6 +3,11 @@ import * as Icons from 'lucide-react';
 import { ALL_NODE_DEFINITIONS, NODE_CATEGORIES, searchNodes } from '../../nodes/NodeRegistry';
 import type { NodeDefinition } from '../../nodes/NodeDefinition';
 import type { NodeCategory } from '../../graph/LogicNode';
+import { databaseManager } from '../../../../application/resources/DatabaseManager';
+import { authManager } from '../../../../application/resources/AuthManager';
+import { storageManager } from '../../../../application/resources/StorageManager';
+import { apiManager } from '../../../../application/resources/APIManager';
+import { environmentManager } from '../../../../application/resources/EnvironmentManager';
 
 export const NodePalette: React.FC = () => {
   const [leftTab, setLeftTab] = useState<'library' | 'resources'>('library');
@@ -14,6 +19,12 @@ export const NodePalette: React.FC = () => {
     : activeCategory === 'All'
     ? ALL_NODE_DEFINITIONS
     : ALL_NODE_DEFINITIONS.filter((n) => n.category === activeCategory);
+
+  const dbConnections = databaseManager.getAllConnections();
+  const authConfigs = authManager.getAll();
+  const storageBuckets = storageManager.getAll();
+  const apis = apiManager.getAll();
+  const envVars = environmentManager.getAll();
 
   const handleDragStart = (e: React.DragEvent, nodeDef: NodeDefinition) => {
     e.dataTransfer.setData('application/reactflow', nodeDef.type);
@@ -44,44 +55,114 @@ export const NodePalette: React.FC = () => {
 
       {leftTab === 'resources' ? (
         <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar text-xs">
-          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-1">
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <Icons.Database size={14} className="text-cyan-400" />
-              <span>Databases</span>
+          {/* Databases */}
+          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-2">
+            <div className="flex items-center justify-between font-semibold text-white">
+              <div className="flex items-center gap-2">
+                <Icons.Database size={14} className="text-cyan-400" />
+                <span>Databases</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
+                {dbConnections.length} Connected
+              </span>
             </div>
-            <span className="text-[10px] text-gray-400 block">SQLite, PostgreSQL, MySQL, MongoDB, Firebase</span>
+
+            {dbConnections.map((db) => (
+              <div key={db.id} className="p-2 bg-[#181a20] border border-[#232733] rounded space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-white truncate">{db.name}</span>
+                  <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded">
+                    {db.type}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 font-mono">
+                  Tables: {db.tables.map((t) => t.name).join(', ')}
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-1">
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <Icons.ShieldCheck size={14} className="text-purple-400" />
-              <span>Authentication</span>
+          {/* Authentication */}
+          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-2">
+            <div className="flex items-center justify-between font-semibold text-white">
+              <div className="flex items-center gap-2">
+                <Icons.ShieldCheck size={14} className="text-purple-400" />
+                <span>Authentication</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-950 text-purple-400 border border-purple-800">
+                {authConfigs.length} Provider
+              </span>
             </div>
-            <span className="text-[10px] text-gray-400 block">Firebase Auth, Supabase, JWT, OAuth2</span>
+
+            {authConfigs.map((auth) => (
+              <div key={auth.id} className="p-2 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-white">{auth.name}</span>
+                <span className="text-[9px] font-mono text-purple-300 uppercase">{auth.provider}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-1">
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <Icons.HardDrive size={14} className="text-emerald-400" />
-              <span>Storage Providers</span>
+          {/* Storage Providers */}
+          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-2">
+            <div className="flex items-center justify-between font-semibold text-white">
+              <div className="flex items-center gap-2">
+                <Icons.HardDrive size={14} className="text-emerald-400" />
+                <span>Storage Buckets</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+                {storageBuckets.length} Bucket
+              </span>
             </div>
-            <span className="text-[10px] text-gray-400 block">AWS S3, Firebase Storage, Cloudinary</span>
+
+            {storageBuckets.map((st) => (
+              <div key={st.id} className="p-2 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-white truncate">{st.name}</span>
+                <span className="text-[9px] font-mono text-emerald-400">{st.bucketName}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-1">
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <Icons.Globe size={14} className="text-orange-400" />
-              <span>External APIs</span>
+          {/* External APIs */}
+          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-2">
+            <div className="flex items-center justify-between font-semibold text-white">
+              <div className="flex items-center gap-2">
+                <Icons.Globe size={14} className="text-orange-400" />
+                <span>External APIs</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-orange-950 text-orange-400 border border-orange-800">
+                {apis.length} Active
+              </span>
             </div>
-            <span className="text-[10px] text-gray-400 block">Stripe, OpenAI, Twilio, Webhook Gateways</span>
+
+            {apis.map((api) => (
+              <div key={api.id} className="p-2 bg-[#181a20] border border-[#232733] rounded space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-white truncate">{api.name}</span>
+                  <span className="text-[9px] font-mono text-orange-400 font-bold">{api.method}</span>
+                </div>
+                <div className="text-[9px] font-mono text-gray-500 truncate">{api.url}</div>
+              </div>
+            ))}
           </div>
 
-          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-1">
-            <div className="flex items-center gap-2 font-semibold text-white">
-              <Icons.Key size={14} className="text-amber-400" />
-              <span>Environment & Secrets</span>
+          {/* Environment Variables & Secrets */}
+          <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded-lg space-y-2">
+            <div className="flex items-center justify-between font-semibold text-white">
+              <div className="flex items-center gap-2">
+                <Icons.Key size={14} className="text-amber-400" />
+                <span>Environment Secrets</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-950 text-amber-400 border border-amber-800">
+                {envVars.length} Variables
+              </span>
             </div>
-            <span className="text-[10px] text-gray-400 block">.env, .env.production, API Keys, Secrets</span>
+
+            {envVars.map((env) => (
+              <div key={env.key} className="p-1.5 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between text-[10px] font-mono">
+                <span className="text-indigo-400 font-semibold truncate">{env.key}</span>
+                <span className="text-gray-400 font-sans">{env.isSecret ? '••••••••' : env.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       ) : (
