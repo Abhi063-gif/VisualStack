@@ -3,11 +3,12 @@ import * as Icons from 'lucide-react';
 import { useLogicStore } from '../../../../stores/LogicStore';
 import { graphManager } from '../../graph/GraphManager';
 import { componentDiscoveryEngine } from '../../../../application/discovery/ComponentDiscovery';
+import { DataMappingPanel } from '../../../../application/engines/DataMappingPanel';
 
 const TabButton = ({ active, label, onClick }: { active?: boolean; label: string; onClick: () => void }) => (
   <button
     onClick={onClick}
-    className={`flex-1 py-3 text-[11px] font-medium transition-colors border-b-2 ${
+    className={`flex-1 py-3 text-[11px] font-medium transition-colors border-b-2 cursor-pointer ${
       active ? 'text-gray-100 border-indigo-500 font-semibold' : 'text-gray-500 border-transparent hover:text-gray-300'
     }`}
   >
@@ -106,9 +107,6 @@ const TextareaBlock = ({
   </div>
 );
 
-/**
- * Real-Time Execution Flow Timeline Component (Matching Attached Inspector Design)
- */
 const ExecutionFlowPanel: React.FC = () => {
   const { executionSteps, clearExecutionSteps } = useLogicStore();
 
@@ -150,19 +148,16 @@ const ExecutionFlowPanel: React.FC = () => {
 
             return (
               <div key={step.id} className="relative flex items-start group">
-                {/* Step Connector Line & Arrow */}
                 {!isLast && (
                   <div className="absolute left-[13px] top-[26px] bottom-[-6px] w-[1px] bg-gradient-to-b from-[#3b82f6]/50 to-[#3b82f6]/20 flex flex-col items-center justify-center z-0">
                     <Icons.ChevronDown size={10} className="text-indigo-400/60 -mt-1" />
                   </div>
                 )}
 
-                {/* Badge Number Icon */}
                 <div className="relative z-10 w-7 h-7 rounded-full bg-[#181a26] border border-[#3b82f6]/40 text-[#a5b4fc] text-[11px] font-mono font-bold flex items-center justify-center shrink-0 shadow-sm group-hover:border-indigo-400 transition-colors">
                   {step.stepIndex}
                 </div>
 
-                {/* Step Name & Information */}
                 <div className="ml-3 flex-1 min-w-0 pb-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 truncate pr-2">
@@ -170,7 +165,6 @@ const ExecutionFlowPanel: React.FC = () => {
                       <span className="text-xs font-medium text-white truncate">{step.nodeName}</span>
                     </div>
 
-                    {/* Status Pill */}
                     <span
                       className={`text-xs font-medium font-sans px-1.5 py-0.5 rounded shrink-0 ${
                         isSuccess
@@ -200,7 +194,7 @@ const ExecutionFlowPanel: React.FC = () => {
 
 export const PropertyPanel: React.FC = () => {
   const { selectedNodeId, nodes, syncFromGraph, executionSteps } = useLogicStore();
-  const [activeTab, setActiveTab] = useState<'config' | 'ports' | 'flow' | 'json'>('config');
+  const [activeTab, setActiveTab] = useState<'config' | 'ports' | 'mappings' | 'flow' | 'json'>('config');
 
   const selectedNode = selectedNodeId ? graphManager.getNode(selectedNodeId) : null;
   const storeNode = nodes.find((n) => n.id === selectedNodeId);
@@ -211,10 +205,11 @@ export const PropertyPanel: React.FC = () => {
     return (
       <div className="w-full h-full bg-[#0e0f12] text-gray-300 flex flex-col border-l border-[#232733] shrink-0 select-none box-border overflow-hidden">
         {/* Top Header Tabs */}
-        <div className="flex border-b border-[#232733] px-2 shrink-0 justify-between items-center bg-[#0e0f12]">
-          <div className="flex flex-1">
+        <div className="flex border-b border-[#232733] px-2 shrink-0 justify-between items-center bg-[#0e0f12] overflow-x-auto custom-scrollbar">
+          <div className="flex flex-1 min-w-[320px]">
             <TabButton active={activeTab === 'config'} label="Config" onClick={() => setActiveTab('config')} />
             <TabButton active={activeTab === 'ports'} label="Ports" onClick={() => setActiveTab('ports')} />
+            <TabButton active={activeTab === 'mappings'} label="Mappings" onClick={() => setActiveTab('mappings')} />
             <TabButton
               active={activeTab === 'flow'}
               label={`Flow (${executionSteps.length})`}
@@ -224,8 +219,9 @@ export const PropertyPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* If Flow tab active, show ExecutionFlowPanel directly even when no node selected */}
-        {activeTab === 'flow' ? (
+        {activeTab === 'mappings' ? (
+          <DataMappingPanel />
+        ) : activeTab === 'flow' ? (
           <div className="p-3 h-full overflow-hidden">
             <ExecutionFlowPanel />
           </div>
@@ -237,11 +233,10 @@ export const PropertyPanel: React.FC = () => {
               </div>
               <span className="text-xs font-semibold text-gray-300">Select a Node Element</span>
               <span className="text-[11px] text-gray-500 mt-1 max-w-[200px] leading-relaxed">
-                Click any node on the canvas to configure properties & ports.
+                Click any node on the canvas to configure properties, ports & data mappings.
               </span>
             </div>
 
-            {/* Always display Execution Flow Timeline in default empty state */}
             <div className="flex-1 min-h-[260px]">
               <ExecutionFlowPanel />
             </div>
@@ -279,10 +274,11 @@ export const PropertyPanel: React.FC = () => {
   return (
     <div className="w-full h-full bg-[#0e0f12] text-gray-300 flex flex-col border-l border-[#232733] shrink-0 select-none relative custom-scrollbar overflow-hidden box-border">
       {/* Top Header Tabs */}
-      <div className="flex border-b border-[#232733] px-2 shrink-0 justify-between items-center bg-[#0e0f12]">
-        <div className="flex flex-1">
+      <div className="flex border-b border-[#232733] px-2 shrink-0 justify-between items-center bg-[#0e0f12] overflow-x-auto custom-scrollbar">
+        <div className="flex flex-1 min-w-[320px]">
           <TabButton active={activeTab === 'config'} label="Config" onClick={() => setActiveTab('config')} />
           <TabButton active={activeTab === 'ports'} label="Ports" onClick={() => setActiveTab('ports')} />
+          <TabButton active={activeTab === 'mappings'} label="Mappings" onClick={() => setActiveTab('mappings')} />
           <TabButton
             active={activeTab === 'flow'}
             label={`Flow (${executionSteps.length})`}
@@ -311,8 +307,9 @@ export const PropertyPanel: React.FC = () => {
         </span>
       </div>
 
-      {/* Main Form Fields / Execution Flow Container */}
+      {/* Main Form Fields / Execution Flow / Mappings Container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 custom-scrollbar box-border w-full min-w-0">
+        {activeTab === 'mappings' && <DataMappingPanel />}
         {activeTab === 'flow' && <ExecutionFlowPanel />}
 
         {activeTab === 'config' && (
@@ -371,7 +368,7 @@ export const PropertyPanel: React.FC = () => {
             ) : (
               Object.entries(selectedNode.config).map(([key, value]) => {
                 if (key === 'targetComponentId' || key === 'targetComponentName' || key === 'eventType') {
-                  return null; // Rendered in custom section above
+                  return null;
                 }
                 const valType = typeof value;
 
