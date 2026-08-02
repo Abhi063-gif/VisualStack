@@ -21,35 +21,54 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
   // Database State
   const [dbName, setDbName] = useState('MongoDB Atlas Cluster');
   const [dbType, setDbType] = useState<DatabaseType>('MongoDB');
-  const [dbHost, setDbHost] = useState('cluster0.mongodb.net');
-  const [dbPort, setDbPort] = useState(27017);
-  const [dbUsername, setDbUsername] = useState('admin');
+  const [dbMongoUri, setDbMongoUri] = useState('mongodb+srv://admin:secretPass123@cluster0.mongodb.net/production_db?retryWrites=true&w=majority');
+  const [dbHost, setDbHost] = useState('localhost');
+  const [dbPort, setDbPort] = useState(5432);
+  const [dbUsername, setDbUsername] = useState('postgres');
   const [dbPassword, setDbPassword] = useState('••••••••');
-  const [dbNameField, setDbNameField] = useState('production_app_db');
+  const [dbNameField, setDbNameField] = useState('production_db');
   const [dbSsl, setDbSsl] = useState(true);
-  const [dbCollections, setDbCollections] = useState('users, orders, products, analytics');
+  const [dbCollections, setDbCollections] = useState('users, orders, products, logs');
 
   // Auth State
-  const [authName, setAuthName] = useState('Supabase Auth Provider');
+  const [authName, setAuthName] = useState('Supabase Auth Service');
   const [authProvider, setAuthProvider] = useState<AuthProviderType>('supabase');
-  const [authSecret, setAuthSecret] = useState('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
+  const [supabaseUrl, setSupabaseUrl] = useState('https://xyzcompany.supabase.co');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
+  const [firebaseApiKey, setFirebaseApiKey] = useState('AIzaSyD-1234567890EXAMPLEKEY');
+  const [firebaseProjectId, setFirebaseProjectId] = useState('my-app-project-id');
+  const [oauthClientId, setOauthClientId] = useState('1234567890-example.apps.googleusercontent.com');
+  const [oauthClientSecret, setOauthClientSecret] = useState('GOCSPX-exampleSecretKey123');
+  const [authSecret, setAuthSecret] = useState('super-secret-jwt-key-visualstack');
 
   // Storage State
-  const [stName, setStName] = useState('AWS S3 Production Bucket');
-  const [stProvider, setStProvider] = useState<StorageProviderType>('s3');
-  const [stBucket, setStBucket] = useState('my-app-production-assets');
-  const [stRegion, setStRegion] = useState('us-west-2');
+  const [stName, setStName] = useState('Cloudinary Media Asset Storage');
+  const [stProvider, setStProvider] = useState<StorageProviderType>('cloudinary');
+  // Cloudinary Specific
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState('dxy_my_cloud');
+  const [cloudinaryApiKey, setCloudinaryApiKey] = useState('123456789012345');
+  const [cloudinaryApiSecret, setCloudinaryApiSecret] = useState('••••••••••••••••••••••••');
+  // AWS S3 Specific
+  const [s3Bucket, setS3Bucket] = useState('my-app-production-assets');
+  const [s3Region, setS3Region] = useState('us-west-2');
+  const [s3AccessKey, setS3AccessKey] = useState('AKIAIOSFODNN7EXAMPLE');
+  const [s3SecretKey, setS3SecretKey] = useState('••••••••••••••••••••••••');
 
   // API State
-  const [apiName, setApiName] = useState('Custom Payment Gateway Endpoint');
+  const [apiName, setApiName] = useState('Stripe Checkout Gateway');
+  const [apiServiceType, setApiServiceType] = useState<'stripe' | 'openai' | 'custom'>('stripe');
+  const [stripeSecretKey, setStripeSecretKey] = useState('sk_test_51MzExampleSecretKey12345');
+  const [stripePublishableKey, setStripePublishableKey] = useState('pk_test_51MzExamplePubKey12345');
+  const [stripeWebhookSecret, setStripeWebhookSecret] = useState('whsec_ExampleWebhookSecret123');
+  const [openaiApiKey, setOpenaiApiKey] = useState('sk-proj-ExampleOpenAIApiKey123');
   const [apiProtocol, setApiProtocol] = useState<APIProtocol>('REST');
   const [apiMethod, setApiMethod] = useState<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'>('POST');
-  const [apiUrl, setApiUrl] = useState('https://api.paymentgateway.com/v1/charge');
+  const [apiUrl, setApiUrl] = useState('https://api.stripe.com/v1/checkout/sessions');
   const [apiAuthType, setApiAuthType] = useState<'None' | 'Bearer' | 'APIKey' | 'Basic'>('Bearer');
 
   // Env State
-  const [envKey, setEnvKey] = useState('MONGODB_ATLAS_URI');
-  const [envVal, setEnvVal] = useState('mongodb+srv://admin:pass@cluster0.mongodb.net/production_app_db');
+  const [envKey, setEnvKey] = useState('CLOUDINARY_URL');
+  const [envVal, setEnvVal] = useState('cloudinary://123456789012345:secret@dxy_my_cloud');
   const [envSecret, setEnvSecret] = useState(true);
   const [envTarget, setEnvTarget] = useState<EnvVariable['targetEnv']>('production');
 
@@ -74,7 +93,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
         id: `db_${Date.now()}`,
         name: dbName,
         type: dbType,
-        host: dbHost,
+        host: dbType === 'MongoDB' ? dbMongoUri : dbHost,
         port: dbPort,
         username: dbUsername,
         password: dbPassword,
@@ -84,7 +103,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
         status: 'connected',
         tables: collectionsArr.map((col) => ({
           name: col,
-          type: dbType === 'MongoDB' ? 'collection' : 'table',
+          type: dbType === 'MongoDB' || dbType === 'Firebase Firestore' ? 'collection' : 'table',
           columns: [
             { name: '_id', type: 'objectId', isPrimaryKey: true, isNullable: false },
             { name: 'created_at', type: 'timestamp', isPrimaryKey: false, isNullable: false },
@@ -98,7 +117,9 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
         name: authName,
         provider: authProvider,
         enabled: true,
-        jwtSecret: authSecret,
+        clientId: authProvider === 'oauth2' ? oauthClientId : undefined,
+        clientSecret: authProvider === 'oauth2' ? oauthClientSecret : undefined,
+        jwtSecret: authProvider === 'supabase' ? supabaseAnonKey : authSecret,
         tokenExpirySeconds: 86400,
         socialProviders: ['google', 'github'],
       });
@@ -107,8 +128,10 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
         id: `st_${Date.now()}`,
         name: stName,
         provider: stProvider,
-        bucketName: stBucket,
-        region: stRegion,
+        bucketName: stProvider === 'cloudinary' ? cloudinaryCloudName : s3Bucket,
+        region: stProvider === 's3' ? s3Region : undefined,
+        accessKeyId: stProvider === 'cloudinary' ? cloudinaryApiKey : s3AccessKey,
+        secretAccessKey: stProvider === 'cloudinary' ? cloudinaryApiSecret : s3SecretKey,
         isPublic: true,
       });
     } else if (type === 'api') {
@@ -117,8 +140,12 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
         name: apiName,
         protocol: apiProtocol,
         method: apiMethod,
-        url: apiUrl,
-        headers: { 'Content-Type': 'application/json' },
+        url: apiServiceType === 'stripe' ? 'https://api.stripe.com/v1/checkout/sessions' : apiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiServiceType === 'stripe' ? { Authorization: `Bearer ${stripeSecretKey}` } : {}),
+          ...(apiServiceType === 'openai' ? { Authorization: `Bearer ${openaiApiKey}` } : {}),
+        },
         authType: apiAuthType,
       });
     } else if (type === 'env') {
@@ -130,11 +157,11 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-[#14161d] border border-[#232733] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col box-border text-gray-200">
         {/* Modal Header */}
         <div className="p-4 border-b border-[#232733] flex items-center justify-between bg-[#11131c]">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
               {type === 'database' && <Icons.Database size={16} />}
               {type === 'auth' && <Icons.ShieldCheck size={16} />}
@@ -144,9 +171,9 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white capitalize">
-                Configure {type === 'env' ? 'Environment Variable' : `${type} Resource`}
+                Configure {type === 'env' ? 'Environment Secret' : `${type} Credentials`}
               </h3>
-              <p className="text-[11px] text-gray-400">Enter custom credentials & settings for your project.</p>
+              <p className="text-[11px] text-gray-400">Specify exact API keys, secrets, & connection strings.</p>
             </div>
           </div>
           <button
@@ -158,8 +185,145 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
         </div>
 
         {/* Modal Form Body */}
-        <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar font-sans text-xs">
-          {/* DATABASE FORM */}
+        <div className="p-4 space-y-3.5 max-h-[72vh] overflow-y-auto custom-scrollbar font-sans text-xs">
+          {/* ========================================================================= */}
+          {/* 1. STORAGE PROVIDERS SPECIFIC CREDENTIALS */}
+          {/* ========================================================================= */}
+          {type === 'storage' && (
+            <>
+              <div>
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Configuration Name</label>
+                <input
+                  type="text"
+                  value={stName}
+                  onChange={(e) => setStName(e.target.value)}
+                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Storage Provider</label>
+                <select
+                  value={stProvider}
+                  onChange={(e) => {
+                    const p = e.target.value as StorageProviderType;
+                    setStProvider(p);
+                    if (p === 'cloudinary') setStName('Cloudinary Media Asset Storage');
+                    if (p === 's3') setStName('AWS S3 Bucket Storage');
+                    if (p === 'supabase') setStName('Supabase Storage Bucket');
+                  }}
+                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                >
+                  <option value="cloudinary">Cloudinary (Cloud Name, API Key, Secret)</option>
+                  <option value="s3">AWS S3 (Bucket, Access Key, Secret Key, Region)</option>
+                  <option value="supabase">Supabase Storage (Project URL, Service Key)</option>
+                  <option value="firebase">Firebase Storage (Storage Bucket, Private Key)</option>
+                  <option value="local">Local Storage (Disk Drive)</option>
+                </select>
+              </div>
+
+              {/* CLOUDINARY SPECIFIC FIELDS */}
+              {stProvider === 'cloudinary' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                    Cloudinary API Credentials
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Cloud Name</label>
+                    <input
+                      type="text"
+                      value={cloudinaryCloudName}
+                      onChange={(e) => setCloudinaryCloudName(e.target.value)}
+                      placeholder="e.g. dxy_my_cloud"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">API Key</label>
+                      <input
+                        type="text"
+                        value={cloudinaryApiKey}
+                        onChange={(e) => setCloudinaryApiKey(e.target.value)}
+                        placeholder="123456789012345"
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">API Secret</label>
+                      <input
+                        type="password"
+                        value={cloudinaryApiSecret}
+                        onChange={(e) => setCloudinaryApiSecret(e.target.value)}
+                        placeholder="••••••••••••••••"
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AWS S3 SPECIFIC FIELDS */}
+              {stProvider === 's3' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                    AWS S3 Bucket & IAM Credentials
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Bucket Name</label>
+                      <input
+                        type="text"
+                        value={s3Bucket}
+                        onChange={(e) => setS3Bucket(e.target.value)}
+                        placeholder="my-app-production-assets"
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">AWS Region</label>
+                      <input
+                        type="text"
+                        value={s3Region}
+                        onChange={(e) => setS3Region(e.target.value)}
+                        placeholder="us-east-1"
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Access Key ID</label>
+                    <input
+                      type="text"
+                      value={s3AccessKey}
+                      onChange={(e) => setS3AccessKey(e.target.value)}
+                      placeholder="AKIAIOSFODNN7EXAMPLE"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Secret Access Key</label>
+                    <input
+                      type="password"
+                      value={s3SecretKey}
+                      onChange={(e) => setS3SecretKey(e.target.value)}
+                      placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 2. DATABASE PROVIDERS SPECIFIC CREDENTIALS */}
+          {/* ========================================================================= */}
           {type === 'database' && (
             <>
               <div>
@@ -172,111 +336,136 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Database Type</label>
-                  <select
-                    value={dbType}
-                    onChange={(e) => setDbType(e.target.value as DatabaseType)}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  >
-                    <option value="MongoDB">MongoDB / Atlas</option>
-                    <option value="PostgreSQL">PostgreSQL</option>
-                    <option value="MySQL">MySQL</option>
-                    <option value="SQLite">SQLite</option>
-                    <option value="Supabase">Supabase</option>
-                    <option value="Firebase Firestore">Firebase Firestore</option>
-                    <option value="PlanetScale">PlanetScale</option>
-                    <option value="Neon">Neon DB</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Port</label>
-                  <input
-                    type="number"
-                    value={dbPort}
-                    onChange={(e) => setDbPort(Number(e.target.value))}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Host / Connection String</label>
-                <input
-                  type="text"
-                  value={dbHost}
-                  onChange={(e) => setDbHost(e.target.value)}
-                  placeholder="e.g. cluster0.mongodb.net or localhost"
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Database Engine</label>
+                <select
+                  value={dbType}
+                  onChange={(e) => {
+                    const t = e.target.value as DatabaseType;
+                    setDbType(t);
+                    if (t === 'MongoDB') setDbName('MongoDB Atlas Cluster');
+                    if (t === 'PostgreSQL') setDbName('PostgreSQL Primary DB');
+                  }}
                   className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
+                >
+                  <option value="MongoDB">MongoDB / Atlas (URI Connection String)</option>
+                  <option value="PostgreSQL">PostgreSQL / Neon / Supabase DB</option>
+                  <option value="MySQL">MySQL / PlanetScale</option>
+                  <option value="SQLite">SQLite (Local Embedded File)</option>
+                  <option value="Firebase Firestore">Firebase Firestore</option>
+                </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Username</label>
-                  <input
-                    type="text"
-                    value={dbUsername}
-                    onChange={(e) => setDbUsername(e.target.value)}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  />
+              {/* MONGODB ATLAS SPECIFIC FIELDS */}
+              {dbType === 'MongoDB' ? (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-400">
+                    MongoDB Atlas Connection URI
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Connection String (URI)</label>
+                    <input
+                      type="text"
+                      value={dbMongoUri}
+                      onChange={(e) => setDbMongoUri(e.target.value)}
+                      placeholder="mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500 text-[11px]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Database Name</label>
+                    <input
+                      type="text"
+                      value={dbNameField}
+                      onChange={(e) => setDbNameField(e.target.value)}
+                      placeholder="production_app_db"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Collections (comma separated)</label>
+                    <input
+                      type="text"
+                      value={dbCollections}
+                      onChange={(e) => setDbCollections(e.target.value)}
+                      placeholder="users, orders, products, analytics"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Password</label>
-                  <input
-                    type="password"
-                    value={dbPassword}
-                    onChange={(e) => setDbPassword(e.target.value)}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  />
+              ) : (
+                /* POSTGRES / MYSQL STANDALONE FIELDS */
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Host / DSN</label>
+                      <input
+                        type="text"
+                        value={dbHost}
+                        onChange={(e) => setDbHost(e.target.value)}
+                        placeholder="localhost or db.neon.tech"
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Port</label>
+                      <input
+                        type="number"
+                        value={dbPort}
+                        onChange={(e) => setDbPort(Number(e.target.value))}
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Username</label>
+                      <input
+                        type="text"
+                        value={dbUsername}
+                        onChange={(e) => setDbUsername(e.target.value)}
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Password</label>
+                      <input
+                        type="password"
+                        value={dbPassword}
+                        onChange={(e) => setDbPassword(e.target.value)}
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      checked={dbSsl}
+                      onChange={(e) => setDbSsl(e.target.checked)}
+                      id="dbSslCheck"
+                      className="rounded bg-[#14161d] border-[#232733] text-indigo-600 focus:ring-0 cursor-pointer"
+                    />
+                    <label htmlFor="dbSslCheck" className="text-[11px] text-gray-300 cursor-pointer">
+                      Enable SSL / TLS Connection Encryption
+                    </label>
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Database Name</label>
-                <input
-                  type="text"
-                  value={dbNameField}
-                  onChange={(e) => setDbNameField(e.target.value)}
-                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">
-                  Collections / Tables (comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={dbCollections}
-                  onChange={(e) => setDbCollections(e.target.value)}
-                  placeholder="users, orders, products"
-                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  checked={dbSsl}
-                  onChange={(e) => setDbSsl(e.target.checked)}
-                  id="dbSslCheck"
-                  className="rounded bg-[#181a20] border-[#232733] text-indigo-600 focus:ring-0 cursor-pointer"
-                />
-                <label htmlFor="dbSslCheck" className="text-[11px] text-gray-300 cursor-pointer">
-                  Enable SSL / TLS Connection Encryption
-                </label>
-              </div>
+              )}
             </>
           )}
 
-          {/* AUTH FORM */}
+          {/* ========================================================================= */}
+          {/* 3. AUTH PROVIDERS SPECIFIC CREDENTIALS */}
+          {/* ========================================================================= */}
           {type === 'auth' && (
             <>
               <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Configuration Name</label>
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Auth Name</label>
                 <input
                   type="text"
                   value={authName}
@@ -292,79 +481,108 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
                   onChange={(e) => setAuthProvider(e.target.value as AuthProviderType)}
                   className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
                 >
-                  <option value="supabase">Supabase Auth</option>
-                  <option value="firebase">Firebase Auth</option>
-                  <option value="jwt">Custom JWT Bearer</option>
-                  <option value="oauth2">OAuth2 (Google / GitHub)</option>
-                  <option value="clerk">Clerk Auth</option>
-                  <option value="auth0">Auth0</option>
+                  <option value="supabase">Supabase Auth (Project URL & Anon Key)</option>
+                  <option value="firebase">Firebase Auth (API Key & Project ID)</option>
+                  <option value="jwt">Custom JWT (Secret Key & Expiry)</option>
+                  <option value="oauth2">OAuth2 (Google / GitHub Client ID & Secret)</option>
                 </select>
               </div>
 
-              <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">JWT Secret / Client Secret</label>
-                <input
-                  type="password"
-                  value={authSecret}
-                  onChange={(e) => setAuthSecret(e.target.value)}
-                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
-              </div>
+              {/* SUPABASE AUTH FIELDS */}
+              {authProvider === 'supabase' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Supabase Project URL</label>
+                    <input
+                      type="text"
+                      value={supabaseUrl}
+                      onChange={(e) => setSupabaseUrl(e.target.value)}
+                      placeholder="https://xyzcompany.supabase.co"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Anon / Public API Key</label>
+                    <input
+                      type="password"
+                      value={supabaseAnonKey}
+                      onChange={(e) => setSupabaseAnonKey(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* FIREBASE AUTH FIELDS */}
+              {authProvider === 'firebase' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Firebase API Key</label>
+                    <input
+                      type="text"
+                      value={firebaseApiKey}
+                      onChange={(e) => setFirebaseApiKey(e.target.value)}
+                      placeholder="AIzaSyD-1234567890EXAMPLEKEY"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Project ID</label>
+                    <input
+                      type="text"
+                      value={firebaseProjectId}
+                      onChange={(e) => setFirebaseProjectId(e.target.value)}
+                      placeholder="my-app-project-id"
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* OAUTH2 FIELDS */}
+              {authProvider === 'oauth2' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">OAuth Client ID</label>
+                    <input
+                      type="text"
+                      value={oauthClientId}
+                      onChange={(e) => setOauthClientId(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">OAuth Client Secret</label>
+                    <input
+                      type="password"
+                      value={oauthClientSecret}
+                      onChange={(e) => setOauthClientSecret(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* JWT CUSTOM */}
+              {authProvider === 'jwt' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">JWT Secret Signing Key</label>
+                    <input
+                      type="password"
+                      value={authSecret}
+                      onChange={(e) => setAuthSecret(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {/* STORAGE FORM */}
-          {type === 'storage' && (
-            <>
-              <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Bucket Title</label>
-                <input
-                  type="text"
-                  value={stName}
-                  onChange={(e) => setStName(e.target.value)}
-                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Storage Provider</label>
-                  <select
-                    value={stProvider}
-                    onChange={(e) => setStProvider(e.target.value as StorageProviderType)}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  >
-                    <option value="s3">AWS S3</option>
-                    <option value="supabase">Supabase Storage</option>
-                    <option value="firebase">Firebase Storage</option>
-                    <option value="cloudinary">Cloudinary</option>
-                    <option value="azure">Azure Blob</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Region</label>
-                  <input
-                    type="text"
-                    value={stRegion}
-                    onChange={(e) => setStRegion(e.target.value)}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Bucket Name</label>
-                <input
-                  type="text"
-                  value={stBucket}
-                  onChange={(e) => setStBucket(e.target.value)}
-                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
-              </div>
-            </>
-          )}
-
-          {/* API FORM */}
+          {/* ========================================================================= */}
+          {/* 4. EXTERNAL APIS SPECIFIC CREDENTIALS */}
+          {/* ========================================================================= */}
           {type === 'api' && (
             <>
               <div>
@@ -377,77 +595,142 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Method</label>
-                  <select
-                    value={apiMethod}
-                    onChange={(e) => setApiMethod(e.target.value as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH')}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-2 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  >
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                    <option value="PATCH">PATCH</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Protocol</label>
-                  <select
-                    value={apiProtocol}
-                    onChange={(e) => setApiProtocol(e.target.value as APIProtocol)}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-2 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  >
-                    <option value="REST">REST</option>
-                    <option value="GraphQL">GraphQL</option>
-                    <option value="Webhook">Webhook</option>
-                    <option value="WebSocket">WebSocket</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-300 block mb-1">Auth Type</label>
-                  <select
-                    value={apiAuthType}
-                    onChange={(e) => setApiAuthType(e.target.value as 'None' | 'Bearer' | 'APIKey' | 'Basic')}
-                    className="w-full bg-[#181a20] border border-[#232733] rounded px-2 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                  >
-                    <option value="Bearer">Bearer JWT</option>
-                    <option value="APIKey">API Key</option>
-                    <option value="Basic">Basic Auth</option>
-                    <option value="None">None</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Service Type</label>
+                <select
+                  value={apiServiceType}
+                  onChange={(e) => setApiServiceType(e.target.value as 'stripe' | 'openai' | 'custom')}
+                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                >
+                  <option value="stripe">Stripe Payment Gateway (Secret & Webhook Key)</option>
+                  <option value="openai">OpenAI ChatGPT / Vision API (API Key & Org ID)</option>
+                  <option value="custom">Custom REST / GraphQL API Endpoint</option>
+                </select>
               </div>
 
-              <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Endpoint URL</label>
-                <input
-                  type="text"
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
-                  className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
-                />
-              </div>
+              {/* STRIPE CREDENTIALS */}
+              {apiServiceType === 'stripe' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Stripe Secret Key (sk_test_...)</label>
+                    <input
+                      type="password"
+                      value={stripeSecretKey}
+                      onChange={(e) => setStripeSecretKey(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Stripe Publishable Key (pk_test_...)</label>
+                    <input
+                      type="text"
+                      value={stripePublishableKey}
+                      onChange={(e) => setStripePublishableKey(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Webhook Signing Secret (whsec_...)</label>
+                    <input
+                      type="password"
+                      value={stripeWebhookSecret}
+                      onChange={(e) => setStripeWebhookSecret(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* OPENAI CREDENTIALS */}
+              {apiServiceType === 'openai' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">OpenAI API Key (sk-proj-...)</label>
+                    <input
+                      type="password"
+                      value={openaiApiKey}
+                      onChange={(e) => setOpenaiApiKey(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* CUSTOM REST / GRAPHQL */}
+              {apiServiceType === 'custom' && (
+                <div className="p-3 bg-[#181a20] border border-[#232733] rounded-lg space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Method</label>
+                      <select
+                        value={apiMethod}
+                        onChange={(e) => setApiMethod(e.target.value as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH')}
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-2 py-1.5 text-white font-mono outline-none"
+                      >
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Protocol</label>
+                      <select
+                        value={apiProtocol}
+                        onChange={(e) => setApiProtocol(e.target.value as APIProtocol)}
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-2 py-1.5 text-white font-mono outline-none"
+                      >
+                        <option value="REST">REST</option>
+                        <option value="GraphQL">GraphQL</option>
+                        <option value="Webhook">Webhook</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-gray-300 block mb-1">Auth</label>
+                      <select
+                        value={apiAuthType}
+                        onChange={(e) => setApiAuthType(e.target.value as 'None' | 'Bearer' | 'APIKey' | 'Basic')}
+                        className="w-full bg-[#14161d] border border-[#232733] rounded px-2 py-1.5 text-white font-mono outline-none"
+                      >
+                        <option value="Bearer">Bearer JWT</option>
+                        <option value="APIKey">API Key</option>
+                        <option value="None">None</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-300 block mb-1">Endpoint URL</label>
+                    <input
+                      type="text"
+                      value={apiUrl}
+                      onChange={(e) => setApiUrl(e.target.value)}
+                      className="w-full bg-[#14161d] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none"
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {/* ENV FORM */}
+          {/* ========================================================================= */}
+          {/* 5. ENVIRONMENT VARIABLES */}
+          {/* ========================================================================= */}
           {type === 'env' && (
             <>
               <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Key Name</label>
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Secret Key Name</label>
                 <input
                   type="text"
                   value={envKey}
                   onChange={(e) => setEnvKey(e.target.value)}
-                  placeholder="e.g. MONGODB_ATLAS_URI"
+                  placeholder="e.g. CLOUDINARY_URL or MONGODB_ATLAS_URI"
                   className="w-full bg-[#181a20] border border-[#232733] rounded px-3 py-1.5 text-white font-mono outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-medium text-gray-300 block mb-1">Variable Value</label>
+                <label className="text-[11px] font-medium text-gray-300 block mb-1">Secret Value</label>
                 <input
                   type="text"
                   value={envVal}
@@ -476,7 +759,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ type, onClose, onS
                     onChange={(e) => setEnvTarget(e.target.value as EnvVariable['targetEnv'])}
                     className="w-full bg-[#181a20] border border-[#232733] rounded px-2 py-1 text-white font-mono outline-none"
                   >
-                    <option value="all">All Envs</option>
+                    <option value="all">All Environments</option>
                     <option value="development">Development</option>
                     <option value="production">Production</option>
                   </select>
