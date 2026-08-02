@@ -23,6 +23,9 @@ export type NodeCategory =
   | 'Scheduler'
   | 'Triggers'
   | 'Analytics'
+  | 'Cloud'
+  | 'DevTools'
+  | 'Utilities'
   | 'Custom';
 
 export interface LogicNodeData {

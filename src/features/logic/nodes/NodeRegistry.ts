@@ -30,6 +30,9 @@ import { SCHEDULER_NODE_DEFINITIONS } from './SchedulerNode';
 import { TRIGGER_NODE_DEFINITIONS } from './TriggerNode';
 import { DEVICE_NODE_DEFINITIONS } from './DeviceNode';
 import { ANALYTICS_NODE_DEFINITIONS } from './AnalyticsNode';
+import { CLOUD_NODE_DEFINITIONS } from './CloudNode';
+import { DEVTOOLS_NODE_DEFINITIONS } from './DevToolsNode';
+import { UTILITY_NODE_DEFINITIONS } from './UtilityNode';
 
 import type { NodeCategory } from '../graph/LogicNode';
 
@@ -64,6 +67,9 @@ export const ALL_NODE_DEFINITIONS: NodeDefinition[] = [
   ...TRIGGER_NODE_DEFINITIONS,
   ...DEVICE_NODE_DEFINITIONS,
   ...ANALYTICS_NODE_DEFINITIONS,
+  ...CLOUD_NODE_DEFINITIONS,
+  ...DEVTOOLS_NODE_DEFINITIONS,
+  ...UTILITY_NODE_DEFINITIONS,
 ];
 
 export const NODE_DEFINITIONS_BY_TYPE: Map<string, NodeDefinition> = new Map(
@@ -118,6 +124,9 @@ export const NODE_CATEGORIES: NodeCategory[] = [
   'Scheduler',
   'Triggers',
   'Analytics',
+  'Cloud',
+  'DevTools',
+  'Utilities',
   'Functions',
   'Custom',
 ];
