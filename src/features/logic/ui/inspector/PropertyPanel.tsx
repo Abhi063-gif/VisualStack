@@ -76,9 +76,101 @@ const TextareaBlock = ({
   </div>
 );
 
+/**
+ * Real-Time Execution Flow Timeline Component (Matching Attached Inspector Design)
+ */
+const ExecutionFlowPanel: React.FC = () => {
+  const { executionSteps, clearExecutionSteps } = useLogicStore();
+
+  return (
+    <div className="flex flex-col h-full w-full bg-[#0c0e14] p-3 rounded-lg border border-[#1e2230] box-border text-gray-200 overflow-hidden">
+      {/* Header Banner */}
+      <div className="flex items-center justify-between pb-3 border-b border-[#1e2230]">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-purple-950/80 border border-purple-500/40 flex items-center justify-center">
+            <Icons.Play size={10} className="text-purple-400 fill-purple-400 ml-0.5" />
+          </div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-purple-300">Execution Flow</h3>
+        </div>
+        {executionSteps.length > 0 && (
+          <button
+            onClick={clearExecutionSteps}
+            className="text-[10px] text-gray-400 hover:text-white px-2 py-0.5 bg-[#181a20] hover:bg-[#232733] border border-[#232733] rounded transition-colors"
+          >
+            Clear Flow
+          </button>
+        )}
+      </div>
+
+      {/* Steps List Timeline */}
+      <div className="flex-1 overflow-y-auto pt-4 pb-2 px-1 space-y-0 custom-scrollbar">
+        {executionSteps.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center text-gray-500">
+            <Icons.Activity size={24} className="text-gray-600 mb-2 stroke-1" />
+            <span className="text-xs font-medium text-gray-400">No Execution Flow Logged Yet</span>
+            <span className="text-[10px] text-gray-600 mt-1 max-w-[200px]">
+              Click "Run Logic" in the toolbar to execute graph nodes and visualize real-time logic execution.
+            </span>
+          </div>
+        ) : (
+          executionSteps.map((step, idx) => {
+            const isLast = idx === executionSteps.length - 1;
+            const isSuccess = step.status === 'Success';
+            const isFailed = step.status === 'Failed';
+
+            return (
+              <div key={step.id} className="relative flex items-start group">
+                {/* Step Connector Line & Arrow */}
+                {!isLast && (
+                  <div className="absolute left-[13px] top-[26px] bottom-[-6px] w-[1px] bg-gradient-to-b from-[#3b82f6]/50 to-[#3b82f6]/20 flex flex-col items-center justify-center z-0">
+                    <Icons.ChevronDown size={10} className="text-indigo-400/60 -mt-1" />
+                  </div>
+                )}
+
+                {/* Badge Number Icon */}
+                <div className="relative z-10 w-7 h-7 rounded-full bg-[#181a26] border border-[#3b82f6]/40 text-[#a5b4fc] text-[11px] font-mono font-bold flex items-center justify-center shrink-0 shadow-sm group-hover:border-indigo-400 transition-colors">
+                  {step.stepIndex}
+                </div>
+
+                {/* Step Name & Information */}
+                <div className="ml-3 flex-1 min-w-0 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      <span className="text-xs font-mono text-purple-300 font-semibold">{step.stepIndex}</span>
+                      <span className="text-xs font-medium text-white truncate">{step.nodeName}</span>
+                    </div>
+
+                    {/* Status Pill */}
+                    <span
+                      className={`text-xs font-medium font-sans px-1.5 py-0.5 rounded shrink-0 ${
+                        isSuccess
+                          ? 'text-[#10b981] font-semibold'
+                          : isFailed
+                          ? 'text-[#ef4444] font-semibold'
+                          : 'text-[#f59e0b] font-semibold'
+                      }`}
+                    >
+                      {step.status}
+                    </span>
+                  </div>
+                  <div className="text-[10px] font-mono text-gray-500 mt-0.5 flex items-center gap-2">
+                    <span>{step.category}</span>
+                    <span>•</span>
+                    <span>{step.timestamp}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const PropertyPanel: React.FC = () => {
-  const { selectedNodeId, nodes, syncFromGraph } = useLogicStore();
-  const [activeTab, setActiveTab] = useState<'config' | 'ports' | 'json'>('config');
+  const { selectedNodeId, nodes, syncFromGraph, executionSteps } = useLogicStore();
+  const [activeTab, setActiveTab] = useState<'config' | 'ports' | 'flow' | 'json'>('config');
 
   const selectedNode = selectedNodeId ? graphManager.getNode(selectedNodeId) : null;
   const storeNode = nodes.find((n) => n.id === selectedNodeId);
@@ -89,22 +181,40 @@ export const PropertyPanel: React.FC = () => {
         {/* Top Header Tabs */}
         <div className="flex border-b border-[#232733] px-2 shrink-0 justify-between items-center bg-[#0e0f12]">
           <div className="flex flex-1">
-            <TabButton active label="Config" onClick={() => {}} />
-            <TabButton label="Ports" onClick={() => {}} />
-            <TabButton label="JSON" onClick={() => {}} />
+            <TabButton active={activeTab === 'config'} label="Config" onClick={() => setActiveTab('config')} />
+            <TabButton active={activeTab === 'ports'} label="Ports" onClick={() => setActiveTab('ports')} />
+            <TabButton
+              active={activeTab === 'flow'}
+              label={`Flow (${executionSteps.length})`}
+              onClick={() => setActiveTab('flow')}
+            />
+            <TabButton active={activeTab === 'json'} label="JSON" onClick={() => setActiveTab('json')} />
           </div>
         </div>
 
-        {/* Empty State matching InspectorPanel */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-gray-600">
-          <div className="w-10 h-10 rounded-lg bg-[#181a20] border border-[#232733] flex items-center justify-center mb-3 text-gray-500">
-            <Icons.Sliders size={18} />
+        {/* If Flow tab active, show ExecutionFlowPanel directly even when no node selected */}
+        {activeTab === 'flow' ? (
+          <div className="p-3 h-full overflow-hidden">
+            <ExecutionFlowPanel />
           </div>
-          <span className="text-xs font-semibold text-gray-300">Select a Node Element</span>
-          <span className="text-[11px] text-gray-500 mt-1 max-w-[200px] leading-relaxed">
-            Click any node on the graph canvas to configure properties & ports.
-          </span>
-        </div>
+        ) : (
+          <div className="flex-1 flex flex-col p-3 overflow-y-auto space-y-4">
+            <div className="flex flex-col items-center justify-center p-6 text-center text-gray-600 bg-[#14161d] rounded-lg border border-[#232733]">
+              <div className="w-10 h-10 rounded-lg bg-[#181a20] border border-[#232733] flex items-center justify-center mb-3 text-gray-400">
+                <Icons.Sliders size={18} />
+              </div>
+              <span className="text-xs font-semibold text-gray-300">Select a Node Element</span>
+              <span className="text-[11px] text-gray-500 mt-1 max-w-[200px] leading-relaxed">
+                Click any node on the canvas to configure properties & ports.
+              </span>
+            </div>
+
+            {/* Always display Execution Flow Timeline in default empty state */}
+            <div className="flex-1 min-h-[260px]">
+              <ExecutionFlowPanel />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -141,6 +251,11 @@ export const PropertyPanel: React.FC = () => {
         <div className="flex flex-1">
           <TabButton active={activeTab === 'config'} label="Config" onClick={() => setActiveTab('config')} />
           <TabButton active={activeTab === 'ports'} label="Ports" onClick={() => setActiveTab('ports')} />
+          <TabButton
+            active={activeTab === 'flow'}
+            label={`Flow (${executionSteps.length})`}
+            onClick={() => setActiveTab('flow')}
+          />
           <TabButton active={activeTab === 'json'} label="JSON" onClick={() => setActiveTab('json')} />
         </div>
       </div>
@@ -164,8 +279,10 @@ export const PropertyPanel: React.FC = () => {
         </span>
       </div>
 
-      {/* Main Form Fields Container */}
+      {/* Main Form Fields / Execution Flow Container */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 custom-scrollbar box-border w-full min-w-0">
+        {activeTab === 'flow' && <ExecutionFlowPanel />}
+
         {activeTab === 'config' && (
           <>
             {/* Identity */}
@@ -200,9 +317,9 @@ export const PropertyPanel: React.FC = () => {
                     <TextareaBlock
                       key={key}
                       label={key}
-                      value={String(value)}
-                      onChange={(v) => handleConfigChange(key, v)}
-                      rows={5}
+                      value={String(value || '')}
+                      onChange={(val) => handleConfigChange(key, val)}
+                      rows={4}
                     />
                   );
                 }
@@ -212,94 +329,69 @@ export const PropertyPanel: React.FC = () => {
                     key={key}
                     label={key}
                     value={String(value ?? '')}
-                    onChange={(v) => handleConfigChange(key, v)}
+                    onChange={(val) => handleConfigChange(key, valType === 'number' ? Number(val) : val)}
                     type={valType === 'number' ? 'number' : 'text'}
                   />
                 );
               })
             )}
+
+            {/* Inline Execution Flow Section inside Config */}
+            <div className="pt-3">
+              <ExecutionFlowPanel />
+            </div>
           </>
         )}
 
         {activeTab === 'ports' && (
           <>
-            {/* Input Ports */}
             <SectionHeader title="Input Ports" count={selectedNode.inputs.length} />
-            <div className="space-y-2 box-border w-full min-w-0">
-              {selectedNode.inputs.map((port) => (
-                <div key={port.id} className="p-2.5 rounded bg-[#181a20] border border-[#232733] space-y-1.5 box-border w-full min-w-0">
-                  <div className="flex items-center justify-between min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0 shrink">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: port.color || '#94a3b8' }} />
-                      <span className="font-mono text-[11px] text-gray-200 truncate">{port.name}</span>
-                    </div>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0e0f12] text-gray-400 border border-[#232733] shrink-0 ml-1">
+            {selectedNode.inputs.length === 0 ? (
+              <span className="text-[11px] text-gray-500 italic block py-1">No input ports.</span>
+            ) : (
+              selectedNode.inputs.map((port) => (
+                <div key={port.id} className="p-2 bg-[#181a20] border border-[#232733] rounded space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-white">{port.name}</span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#232733] text-indigo-400">
                       {port.dataType}
                     </span>
                   </div>
-
                   {port.type === 'data' && (
-                    <div className="mt-1 w-full box-border min-w-0">
-                      <InputBlock
-                        value={String(port.defaultValue ?? '')}
-                        onChange={(v) => handlePortDefaultChange(port.id, v)}
-                        placeholder={`Default (${port.dataType})`}
-                      />
-                    </div>
+                    <InputBlock
+                      value={String(port.defaultValue ?? '')}
+                      onChange={(val) => handlePortDefaultChange(port.id, val)}
+                      placeholder="Default Value"
+                    />
                   )}
                 </div>
-              ))}
-            </div>
+              ))
+            )}
 
-            {/* Output Ports */}
             <SectionHeader title="Output Ports" count={selectedNode.outputs.length} />
-            <div className="space-y-1.5 box-border w-full min-w-0">
-              {selectedNode.outputs.map((port) => (
-                <div key={port.id} className="flex items-center justify-between p-2 rounded bg-[#181a20] border border-[#232733] box-border w-full min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0 shrink">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: port.color || '#ffffff' }} />
-                    <span className="font-mono text-[11px] text-gray-200 truncate">{port.name}</span>
-                  </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0e0f12] text-gray-400 border border-[#232733] shrink-0 ml-1">
+            {selectedNode.outputs.length === 0 ? (
+              <span className="text-[11px] text-gray-500 italic block py-1">No output ports.</span>
+            ) : (
+              selectedNode.outputs.map((port) => (
+                <div key={port.id} className="p-2 bg-[#181a20] border border-[#232733] rounded flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-white">{port.name}</span>
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#232733] text-indigo-400">
                     {port.dataType}
                   </span>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </>
         )}
 
         {activeTab === 'json' && (
-          <>
-            <SectionHeader title="Raw Node Definition" />
-            <div className="bg-[#181a20] border border-[#232733] rounded p-2.5 overflow-x-auto box-border w-full min-w-0">
-              <pre className="text-[10px] font-mono text-indigo-300 leading-relaxed">
-                {JSON.stringify(
-                  {
-                    id: selectedNode.id,
-                    type: selectedNode.type,
-                    category: selectedNode.category,
-                    name: selectedNode.name,
-                    config: selectedNode.config,
-                    inputsCount: selectedNode.inputs.length,
-                    outputsCount: selectedNode.outputs.length,
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-            </div>
-          </>
+          <div className="bg-[#181a20] border border-[#232733] rounded p-2.5">
+            <pre className="text-[10px] font-mono text-emerald-400 whitespace-pre-wrap break-all leading-relaxed">
+              {JSON.stringify(selectedNode, null, 2)}
+            </pre>
+          </div>
         )}
       </div>
-
-      {/* Custom Scrollbar */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #232733; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #383e52; }
-      `}</style>
     </div>
   );
 };

@@ -93,6 +93,7 @@ export class ExecutionEngine {
 
     context.info(`🚀 Starting execution of ${startNodes.length} entry point(s)...`);
     const store = useLogicStore.getState();
+    store.clearExecutionSteps();
     store.addExecutionLog('info', `🚀 Starting graph execution...`);
 
     // Enqueue initial start nodes
@@ -141,6 +142,16 @@ export class ExecutionEngine {
       fn: async () => {
         visitedNodes.add(node.id);
         const result = await executor.execute(node);
+
+        // Record execution step for Node Inspector Execution Flow timeline
+        const isError = result.nextPortId === 'error';
+        useLogicStore.getState().addExecutionStep({
+          nodeId: node.id,
+          nodeName: node.name,
+          nodeType: node.type,
+          category: node.category,
+          status: isError ? 'Failed' : 'Success',
+        });
 
         // Store output values in RuntimeContext for downstream data port consumers
         if (result.outputValues) {

@@ -5,18 +5,32 @@ import { logicService } from '../features/logic/services/LogicService';
 import { variableManager } from '../features/logic/variables/VariableManager';
 import type { Variable } from '../features/logic/variables/VariableManager';
 
+export interface ExecutionStep {
+  id: string;
+  stepIndex: number;
+  nodeId: string;
+  nodeName: string;
+  nodeType: string;
+  category: string;
+  status: 'Success' | 'Failed' | 'Running';
+  timestamp: string;
+}
+
 export interface LogicStoreState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
   executionLogs: { id: string; timestamp: string; level: 'info' | 'warn' | 'error'; message: string }[];
+  executionSteps: ExecutionStep[];
   variables: Variable[];
 
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   setSelectedNodeId: (id: string | null) => void;
   addExecutionLog: (level: 'info' | 'warn' | 'error', message: string) => void;
+  addExecutionStep: (step: Omit<ExecutionStep, 'id' | 'stepIndex' | 'timestamp'>) => void;
   clearLogs: () => void;
+  clearExecutionSteps: () => void;
   refreshVariables: () => void;
   syncFromGraph: () => void;
 }
@@ -26,6 +40,7 @@ export const useLogicStore = create<LogicStoreState>((set) => ({
   edges: [],
   selectedNodeId: null,
   executionLogs: [],
+  executionSteps: [],
   variables: [],
 
   setNodes: (nodes) => set({ nodes }),
@@ -45,7 +60,21 @@ export const useLogicStore = create<LogicStoreState>((set) => ({
       ],
     })),
 
+  addExecutionStep: (step) =>
+    set((state) => ({
+      executionSteps: [
+        ...state.executionSteps,
+        {
+          ...step,
+          id: `step_${Date.now()}_${Math.random()}`,
+          stepIndex: state.executionSteps.length + 1,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ],
+    })),
+
   clearLogs: () => set({ executionLogs: [] }),
+  clearExecutionSteps: () => set({ executionSteps: [] }),
 
   refreshVariables: () => set({ variables: variableManager.getAll() }),
 
