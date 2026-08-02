@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useLogicStore } from '../../../../stores/LogicStore';
 import { graphManager } from '../../graph/GraphManager';
+import { componentDiscoveryEngine } from '../../../../application/discovery/ComponentDiscovery';
 
 const TabButton = ({ active, label, onClick }: { active?: boolean; label: string; onClick: () => void }) => (
   <button
@@ -48,6 +49,35 @@ const InputBlock = ({
         placeholder={placeholder}
         className="bg-transparent border-none outline-none text-white text-[11px] font-mono w-full min-w-0 placeholder-gray-600 box-border"
       />
+    </div>
+  </div>
+);
+
+const SelectBlock = ({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { label: string; value: string }[];
+  onChange: (val: string) => void;
+}) => (
+  <div className="space-y-1 w-full box-border min-w-0">
+    <span className="text-[10px] text-gray-400 font-medium block truncate">{label}</span>
+    <div className="bg-[#181a20] border border-[#232733] rounded hover:border-[#383e52] focus-within:border-indigo-500 transition-colors px-2 py-1 min-h-7 box-border w-full min-w-0 flex items-center">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-transparent border-none outline-none text-white text-[11px] font-mono w-full min-w-0 cursor-pointer"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value} className="bg-[#14161d] text-white">
+            {opt.label}
+          </option>
+        ))}
+      </select>
     </div>
   </div>
 );
@@ -175,6 +205,8 @@ export const PropertyPanel: React.FC = () => {
   const selectedNode = selectedNodeId ? graphManager.getNode(selectedNodeId) : null;
   const storeNode = nodes.find((n) => n.id === selectedNodeId);
 
+  const discoveredComponents = componentDiscoveryEngine.discoverComponents();
+
   if (!selectedNode || !storeNode) {
     return (
       <div className="w-full h-full bg-[#0e0f12] text-gray-300 flex flex-col border-l border-[#232733] shrink-0 select-none box-border overflow-hidden">
@@ -290,12 +322,57 @@ export const PropertyPanel: React.FC = () => {
             <InputBlock label="Title" value={selectedNode.name} onChange={handleNameChange} />
             <TextareaBlock label="Description" value={selectedNode.description} onChange={handleDescriptionChange} rows={2} />
 
+            {/* Special Component Trigger Configuration */}
+            {selectedNode.type === 'event_component_trigger' && (
+              <>
+                <SectionHeader title="Trigger Binding & Event" />
+                <SelectBlock
+                  label="Target UI Component"
+                  value={String(selectedNode.config.targetComponentId || discoveredComponents[0]?.id || '')}
+                  options={discoveredComponents.map((c) => ({
+                    label: `${c.name} (${c.category})`,
+                    value: c.id,
+                  }))}
+                  onChange={(val) => {
+                    const comp = discoveredComponents.find((c) => c.id === val);
+                    handleConfigChange('targetComponentId', val);
+                    if (comp) {
+                      handleConfigChange('targetComponentName', comp.name);
+                    }
+                  }}
+                />
+
+                <SelectBlock
+                  label="Trigger Event"
+                  value={String(selectedNode.config.eventType || 'Click')}
+                  options={[
+                    { label: 'Click', value: 'Click' },
+                    { label: 'Double Click', value: 'Double Click' },
+                    { label: 'Hover', value: 'Hover' },
+                    { label: 'Focus', value: 'Focus' },
+                    { label: 'Blur', value: 'Blur' },
+                    { label: 'Input Change', value: 'Input Change' },
+                    { label: 'Checkbox Toggle', value: 'Checkbox Toggle' },
+                    { label: 'Dropdown Change', value: 'Dropdown Change' },
+                    { label: 'Form Submitted', value: 'Form Submitted' },
+                    { label: 'Page Loaded', value: 'Page Loaded' },
+                    { label: 'Page Closed', value: 'Page Closed' },
+                    { label: 'Component Mounted', value: 'Component Mounted' },
+                  ]}
+                  onChange={(val) => handleConfigChange('eventType', val)}
+                />
+              </>
+            )}
+
             {/* Configuration */}
             <SectionHeader title="Node Configuration" count={Object.keys(selectedNode.config).length} />
             {Object.keys(selectedNode.config).length === 0 ? (
               <span className="text-[11px] text-gray-500 italic block py-1">No configurable parameters.</span>
             ) : (
               Object.entries(selectedNode.config).map(([key, value]) => {
+                if (key === 'targetComponentId' || key === 'targetComponentName' || key === 'eventType') {
+                  return null; // Rendered in custom section above
+                }
                 const valType = typeof value;
 
                 if (valType === 'boolean') {

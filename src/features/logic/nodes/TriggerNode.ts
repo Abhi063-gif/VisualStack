@@ -2,6 +2,24 @@ import type { NodeDefinition } from './NodeDefinition';
 
 export const TRIGGER_NODE_DEFINITIONS: NodeDefinition[] = [
   {
+    type: 'event_component_trigger',
+    category: 'Triggers',
+    name: 'Component UI Trigger',
+    description: 'Triggers workflow execution from a discovered frontend UI component event (Click, Submit, Input Change).',
+    icon: 'mouse-pointer-click',
+    color: '#f59e0b',
+    inputs: [],
+    outputs: [
+      { id: 'exec', name: 'Then', type: 'execution', dataType: 'execution', color: '#ffffff' },
+      { id: 'eventPayload', name: 'Event Payload', type: 'data', dataType: 'object', color: '#f59e0b' },
+    ],
+    defaultConfig: {
+      targetComponentId: 'btn_login_submit',
+      targetComponentName: 'Button_Login',
+      eventType: 'Click',
+    },
+  },
+  {
     type: 'trig_webhook',
     category: 'Triggers',
     name: 'Webhook Endpoint Trigger',
