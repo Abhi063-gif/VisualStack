@@ -22,6 +22,15 @@ import { COMMUNICATION_NODE_DEFINITIONS } from './CommunicationNode';
 import { FILE_STORAGE_NODE_DEFINITIONS } from './FileStorageNode';
 import { AI_INTEGRATION_NODE_DEFINITIONS } from './AIIntegrationNode';
 import { JSON_DATA_NODE_DEFINITIONS } from './JSONDataNode';
+
+import { SECURITY_NODE_DEFINITIONS } from './SecurityNode';
+import { REALTIME_NODE_DEFINITIONS } from './RealtimeNode';
+import { WORKFLOW_NODE_DEFINITIONS } from './WorkflowNode';
+import { SCHEDULER_NODE_DEFINITIONS } from './SchedulerNode';
+import { TRIGGER_NODE_DEFINITIONS } from './TriggerNode';
+import { DEVICE_NODE_DEFINITIONS } from './DeviceNode';
+import { ANALYTICS_NODE_DEFINITIONS } from './AnalyticsNode';
+
 import type { NodeCategory } from '../graph/LogicNode';
 
 export const ALL_NODE_DEFINITIONS: NodeDefinition[] = [
@@ -47,6 +56,14 @@ export const ALL_NODE_DEFINITIONS: NodeDefinition[] = [
   ...FILE_STORAGE_NODE_DEFINITIONS,
   ...AI_INTEGRATION_NODE_DEFINITIONS,
   ...JSON_DATA_NODE_DEFINITIONS,
+
+  ...SECURITY_NODE_DEFINITIONS,
+  ...REALTIME_NODE_DEFINITIONS,
+  ...WORKFLOW_NODE_DEFINITIONS,
+  ...SCHEDULER_NODE_DEFINITIONS,
+  ...TRIGGER_NODE_DEFINITIONS,
+  ...DEVICE_NODE_DEFINITIONS,
+  ...ANALYTICS_NODE_DEFINITIONS,
 ];
 
 export const NODE_DEFINITIONS_BY_TYPE: Map<string, NodeDefinition> = new Map(
@@ -69,13 +86,14 @@ export function getNodesByCategory(category: NodeCategory): NodeDefinition[] {
 }
 
 export function searchNodes(query: string): NodeDefinition[] {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
+  if (!q) return ALL_NODE_DEFINITIONS;
   return ALL_NODE_DEFINITIONS.filter(
     (def) =>
       def.name.toLowerCase().includes(q) ||
       def.description.toLowerCase().includes(q) ||
-      def.type.toLowerCase().includes(q) ||
-      def.category.toLowerCase().includes(q)
+      def.category.toLowerCase().includes(q) ||
+      def.type.toLowerCase().includes(q)
   );
 }
 
@@ -83,16 +101,23 @@ export const NODE_CATEGORIES: NodeCategory[] = [
   'Events',
   'Logic',
   'Variables',
+  'Math',
+  'String',
+  'Date',
+  'API',
   'Database',
   'Auth',
   'E-Commerce',
   'Communication',
-  'Storage',
-  'API',
-  'Math',
-  'String',
-  'Date',
   'Navigation',
+  'Storage',
+  'Security',
+  'Realtime',
+  'Device',
+  'Workflow',
+  'Scheduler',
+  'Triggers',
+  'Analytics',
   'Functions',
   'Custom',
 ];
