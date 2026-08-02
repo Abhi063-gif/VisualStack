@@ -1,6 +1,7 @@
 import { screenManager } from '../screens/ScreenManager';
 import { useLogicStore } from '../../stores/LogicStore';
 import { databaseManager } from '../resources/DatabaseManager';
+import type { Node, Edge } from '@xyflow/react';
 
 export interface StepSimulationResult {
   stepId: string;
@@ -12,6 +13,13 @@ export interface StepSimulationResult {
 }
 
 export class RuntimeSimulatorEngine {
+  public async runSimulation(_nodes?: Node[], _edges?: Edge[]): Promise<StepSimulationResult[]> {
+    const activeScreen = screenManager.getActiveScreen();
+    if (!activeScreen) return [];
+
+    return this.simulateComponentTrigger('app_root', 'Page Loaded');
+  }
+
   public simulateComponentTrigger(componentId: string, eventType: string): StepSimulationResult[] {
     const activeScreen = screenManager.getActiveScreen();
     if (!activeScreen) return [];

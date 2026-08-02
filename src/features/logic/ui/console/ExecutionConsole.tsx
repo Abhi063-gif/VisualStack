@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useLogicStore } from '../../../../stores/LogicStore';
 import { screenManager } from '../../../../application/screens/ScreenManager';
 import { architectureValidator } from '../../../../application/engines/ArchitectureValidator';
+import { runtimeSimulatorEngine } from '../../../../application/simulator/RuntimeSimulatorEngine';
+import { projectModelExporter } from '../../../../application/ir/ProjectModelExporter';
 
 type BottomTab =
   | 'logs'
@@ -15,14 +17,44 @@ type BottomTab =
   | 'warnings';
 
 export const ExecutionConsole: React.FC = () => {
-  const { executionLogs, clearLogs, variables, executionSteps } = useLogicStore();
+  const { executionLogs, clearLogs, variables, executionSteps, nodes, edges } = useLogicStore();
   const [activeTab, setActiveTab] = useState<BottomTab>('logs');
   const [filterLevel, setFilterLevel] = useState<'all' | 'info' | 'warn' | 'error'>('all');
   const [simSpeed, setSimSpeed] = useState<'1x' | '2x' | '5x'>('1x');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [simProgress, setSimProgress] = useState(0);
 
   const activeScreen = screenManager.getActiveScreen();
   const validationIssues = architectureValidator.validateFullProject();
+  const compiledIRJson = projectModelExporter.exportJSONString();
+
+  // Automatic Step Simulator Timer when isSimulating is active
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>;
+    if (isSimulating) {
+      const intervalMs = simSpeed === '5x' ? 200 : simSpeed === '2x' ? 500 : 1000;
+      timer = setInterval(async () => {
+        if (nodes.length === 0) {
+          setIsSimulating(false);
+          return;
+        }
+        await runtimeSimulatorEngine.runSimulation(nodes, edges);
+        setSimProgress((prev) => (prev >= 100 ? 100 : prev + 25));
+      }, intervalMs);
+    }
+    return () => clearInterval(timer);
+  }, [isSimulating, simSpeed, nodes, edges]);
+
+  const handleStartSimulation = async () => {
+    if (!isSimulating) {
+      setSimProgress(10);
+      setIsSimulating(true);
+      await runtimeSimulatorEngine.runSimulation(nodes, edges);
+      setSimProgress(100);
+    } else {
+      setIsSimulating(false);
+    }
+  };
 
   const filteredLogs =
     filterLevel === 'all' ? executionLogs : executionLogs.filter((log) => log.level === filterLevel);
@@ -34,7 +66,7 @@ export const ExecutionConsole: React.FC = () => {
 
   const warnings = [
     ...executionLogs.filter((l) => l.level === 'warn').map((l) => ({ id: l.id, message: l.message })),
-    ...validationIssues.filter((i) => i.type === 'warning').map((i) => ({ id: i.id, message: i.message })),
+    ...validationIssues.filter((i) => i.type === 'warning').map((i) => ({ id: i.message, message: i.message })),
   ];
 
   return (
@@ -200,29 +232,29 @@ export const ExecutionConsole: React.FC = () => {
           </div>
         )}
 
-        {/* 2. Runtime Simulator */}
+        {/* 2. Runtime Simulator (Phase 6 Interactive Engine) */}
         {activeTab === 'simulator' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between p-2.5 bg-[#14161d] border border-[#232733] rounded-lg">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setIsSimulating(!isSimulating)}
-                  className={`px-3 py-1 rounded text-xs font-semibold flex items-center gap-1.5 ${
-                    isSimulating ? 'bg-amber-600 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white'
+                  onClick={handleStartSimulation}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors ${
+                    isSimulating ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white'
                   }`}
                 >
-                  {isSimulating ? <Icons.Pause size={13} /> : <Icons.Play size={13} />}
-                  <span>{isSimulating ? 'Pause Simulator' : 'Start Step Simulation'}</span>
+                  {isSimulating ? <Icons.Pause size={14} /> : <Icons.Play size={14} />}
+                  <span>{isSimulating ? 'Pause Step Simulation' : 'Start Runtime Simulation'}</span>
                 </button>
 
-                <div className="flex items-center gap-1 ml-2 text-[10px] font-sans text-gray-400">
+                <div className="flex items-center gap-1 text-[10px] font-sans text-gray-400">
                   <span>Speed:</span>
                   {(['1x', '2x', '5x'] as const).map((spd) => (
                     <button
                       key={spd}
                       onClick={() => setSimSpeed(spd)}
-                      className={`px-1.5 py-0.5 rounded font-mono ${
-                        simSpeed === spd ? 'bg-indigo-600 text-white font-bold' : 'bg-[#181a20] text-gray-400'
+                      className={`px-2 py-0.5 rounded font-mono cursor-pointer ${
+                        simSpeed === spd ? 'bg-indigo-600 text-white font-bold' : 'bg-[#181a20] text-gray-400 hover:text-white'
                       }`}
                     >
                       {spd}
@@ -231,23 +263,40 @@ export const ExecutionConsole: React.FC = () => {
                 </div>
               </div>
 
-              <span className="text-[10px] text-gray-400 font-mono">
-                Active Step: <strong className="text-purple-300">{executionSteps.length}</strong> Node(s) Executed
-              </span>
+              <div className="flex items-center gap-3">
+                <div className="text-right text-[10px] text-gray-400 font-mono">
+                  <span>Simulation Progress: </span>
+                  <strong className="text-purple-300 font-semibold">{simProgress}%</strong>
+                </div>
+
+                <div className="w-24 bg-[#181a20] h-2 rounded-full overflow-hidden border border-[#232733]">
+                  <div className="bg-purple-500 h-full transition-all duration-300" style={{ width: `${simProgress}%` }} />
+                </div>
+              </div>
             </div>
 
+            {/* Active Execution Steps List */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold uppercase text-gray-400 pb-1">Execution Stack Timeline</div>
-              {executionSteps.map((step) => (
-                <div key={step.id} className="flex items-center justify-between p-2 bg-[#14161d] border border-[#232733] rounded">
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-400 font-mono font-bold">#{step.stepIndex}</span>
-                    <span className="text-white font-medium">{step.nodeName}</span>
-                    <span className="text-[9px] font-mono text-gray-500">({step.category})</span>
-                  </div>
-                  <span className="text-emerald-400 font-semibold text-[10px]">{step.status}</span>
+              <div className="text-[10px] font-semibold uppercase text-purple-400 pb-1 tracking-wider">
+                Simulated Execution Stack Timeline ({executionSteps.length} Steps)
+              </div>
+
+              {executionSteps.length === 0 ? (
+                <div className="text-gray-500 italic py-6 text-center bg-[#14161d] rounded border border-[#232733]">
+                  No step simulation active. Click "Start Runtime Simulation" above to execute graph step-by-step.
                 </div>
-              ))}
+              ) : (
+                executionSteps.map((step) => (
+                  <div key={step.id} className="flex items-center justify-between p-2 bg-[#14161d] border border-[#232733] rounded">
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      <span className="text-purple-400 font-mono font-bold">#{step.stepIndex}</span>
+                      <span className="text-white font-medium truncate">{step.nodeName}</span>
+                      <span className="text-[9px] font-mono text-gray-500">({step.category})</span>
+                    </div>
+                    <span className="text-emerald-400 font-semibold text-[10px] shrink-0">{step.status}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -326,14 +375,18 @@ export const ExecutionConsole: React.FC = () => {
           </div>
         )}
 
-        {/* 6. Compiler IR */}
+        {/* 6. Compiler IR (Phase 6 Live JSON Model Viewer) */}
         {activeTab === 'compiler' && (
           <div className="space-y-2">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider pb-1">
-              Intermediate Representation (IR) Compiler Output
+            <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400 uppercase tracking-wider pb-1">
+              <span>Intermediate Representation (IR) Compiler Output</span>
+              <span className="text-indigo-400 font-mono">Full Application Model JSON</span>
             </div>
-            <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded font-mono text-indigo-300 leading-relaxed">
-              ✓ Unified Application Architecture IR Compiled — 0 Errors, 0 Warnings. Ready for Module 06.
+
+            <div className="bg-[#14161d] border border-[#232733] rounded-lg p-3 overflow-auto max-h-[300px] custom-scrollbar">
+              <pre className="font-mono text-[11px] text-indigo-300 leading-relaxed whitespace-pre-wrap">
+                {compiledIRJson}
+              </pre>
             </div>
           </div>
         )}
