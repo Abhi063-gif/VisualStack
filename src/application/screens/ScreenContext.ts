@@ -1,67 +1,50 @@
-import type { LogicGraph } from '../../features/logic/graph/LogicGraph';
-import type { Variable } from '../../features/logic/variables/VariableManager';
+import type { Node, Edge } from '@xyflow/react';
 
-export interface ScreenBindingRule {
-  id: string;
+export interface ScreenRoute {
+  path: string;
+  isProtected: boolean;
+  requiredRole?: string;
+  redirectToOnDenied?: string;
+}
+
+export interface ScreenBinding {
   componentId: string;
   componentName: string;
+  componentType: string;
   eventType: string;
-  targetNodeId?: string;
+  targetNodeId: string;
 }
 
-export interface ScreenContextData {
+export interface ScreenVariable {
   id: string;
   name: string;
-  route: string;
-  description: string;
-  icon?: string;
-  isDefault?: boolean;
-  variables: Variable[];
-  bindings: ScreenBindingRule[];
-  workflowGraph?: LogicGraph;
-  createdAt: string;
-  updatedAt: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  value: unknown;
+  scope: 'screen' | 'global';
 }
 
-export class ScreenContext {
-  public id: string;
-  public name: string;
-  public route: string;
-  public description: string;
-  public icon: string;
-  public isDefault: boolean;
-  public variables: Variable[];
-  public bindings: ScreenBindingRule[];
-  public workflowGraph?: LogicGraph;
-  public createdAt: string;
-  public updatedAt: string;
+export interface ScreenAuthConfig {
+  enabled: boolean;
+  provider: 'firebase' | 'supabase' | 'jwt' | 'oauth2' | 'custom';
+  requireAuth: boolean;
+  redirectUnauthenticatedTo: string;
+}
 
-  constructor(data: ScreenContextData) {
-    this.id = data.id;
-    this.name = data.name;
-    this.route = data.route;
-    this.description = data.description || '';
-    this.icon = data.icon || 'layout';
-    this.isDefault = Boolean(data.isDefault);
-    this.variables = data.variables || [];
-    this.bindings = data.bindings || [];
-    this.workflowGraph = data.workflowGraph;
-    this.createdAt = data.createdAt || new Date().toISOString();
-    this.updatedAt = data.updatedAt || new Date().toISOString();
-  }
+export interface ScreenStorageConfig {
+  provider: 's3' | 'firebase' | 'supabase' | 'cloudinary' | 'local';
+  defaultBucket: string;
+}
 
-  public toJSON(): ScreenContextData {
-    return {
-      id: this.id,
-      name: this.name,
-      route: this.route,
-      description: this.description,
-      icon: this.icon,
-      isDefault: this.isDefault,
-      variables: this.variables,
-      bindings: this.bindings,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-    };
-  }
+export interface ScreenContext {
+  id: string;
+  name: string;
+  route: ScreenRoute;
+  nodes: Node[];
+  edges: Edge[];
+  bindings: ScreenBinding[];
+  variables: ScreenVariable[];
+  authConfig: ScreenAuthConfig;
+  storageConfig: ScreenStorageConfig;
+  createdAt: string;
+  updatedAt: string;
 }

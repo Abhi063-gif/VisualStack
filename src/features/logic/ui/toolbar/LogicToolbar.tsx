@@ -1,36 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
 import { logicService } from '../../services/LogicService';
 import { graphManager } from '../../graph/GraphManager';
 import { useLogicStore } from '../../../../stores/LogicStore';
 import { screenManager } from '../../../../application/screens/ScreenManager';
-import { screenRegistry } from '../../../../application/screens/ScreenRegistry';
 
 export const LogicToolbar: React.FC = () => {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const { syncFromGraph, clearLogs } = useLogicStore();
   const [isRunning, setIsRunning] = useState(false);
-  const [activeScreen, setActiveScreen] = useState(screenManager.getActiveScreen());
-  const [screensList, setScreensList] = useState(screenRegistry.getAll());
+  const [activeScreenId, setActiveScreenId] = useState<string>(screenManager.getActiveScreenId());
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    const unsubManager = screenManager.subscribe((screen) => {
-      setActiveScreen(screen);
-    });
-    const unsubRegistry = screenRegistry.subscribe(() => {
-      setScreensList(screenRegistry.getAll());
-    });
-    return () => {
-      unsubManager();
-      unsubRegistry();
-    };
-  }, []);
-
-  const handleScreenChange = (screenId: string) => {
-    const screen = screenManager.setActiveScreen(screenId);
-    setActiveScreen(screen);
-  };
+  const screens = screenManager.getAllScreens();
+  const activeScreen = screens.find((s) => s.id === activeScreenId) || screens[0];
 
   const handleRunGraph = async () => {
     setIsRunning(true);
@@ -51,28 +35,77 @@ export const LogicToolbar: React.FC = () => {
     }
   };
 
+  const handleSelectScreen = (screenId: string) => {
+    const success = screenManager.switchScreen(screenId);
+    if (success) {
+      setActiveScreenId(screenId);
+      setIsDropdownOpen(false);
+    }
+  };
+
   return (
-    <div className="h-12 bg-[#0e0f12] border-b border-[#232733] px-4 flex items-center justify-between select-none shrink-0 box-border w-full">
-      {/* Title & Screen Context Selector */}
-      <div className="flex items-center gap-3">
-        <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
-          <Icons.Workflow size={15} />
+    <div className="h-12 bg-[#0e0f12] border-b border-[#232733] px-4 flex items-center justify-between select-none shrink-0 relative z-50">
+      {/* Title & Screen Selector Dropdown */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+            <Icons.Workflow size={15} />
+          </div>
+          <div>
+            <h1 className="text-xs font-semibold text-white tracking-wide">Visual Logic Designer</h1>
+            <p className="text-[10px] text-gray-400">Blueprint Automation Engine</p>
+          </div>
         </div>
 
-        {/* Screen Selector Dropdown */}
-        <div className="flex items-center gap-2 bg-[#14161d] border border-[#232733] rounded px-2.5 py-1 hover:border-[#383e52] transition-colors">
-          <Icons.Monitor size={13} className="text-indigo-400 shrink-0" />
-          <select
-            value={activeScreen.id}
-            onChange={(e) => handleScreenChange(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-white outline-none cursor-pointer pr-1"
+        {/* Divider */}
+        <div className="h-5 w-[1px] bg-[#232733]" />
+
+        {/* Current Screen Selector Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] hover:border-indigo-500/50 text-white text-xs font-medium transition-all cursor-pointer shadow-sm"
           >
-            {screensList.map((s) => (
-              <option key={s.id} value={s.id} className="bg-[#14161d] text-white">
-                {s.name} ({s.route})
-              </option>
-            ))}
-          </select>
+            <Icons.Monitor size={13} className="text-indigo-400" />
+            <span className="text-gray-400 text-[10px] uppercase font-semibold tracking-wider">Screen:</span>
+            <span className="text-white font-semibold">{activeScreen ? activeScreen.name : 'Select Screen'}</span>
+            {activeScreen?.route && (
+              <span className="text-[10px] font-mono text-gray-400 bg-[#0e0f12] px-1.5 py-0.5 rounded border border-[#232733]">
+                {activeScreen.route.path}
+              </span>
+            )}
+            <Icons.ChevronDown size={13} className={`text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Screen Options Menu */}
+          {isDropdownOpen && (
+            <div className="absolute left-0 mt-1.5 w-64 bg-[#14161d] border border-[#232733] rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="px-3 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-[#232733] mb-1">
+                Designed Frontend Screens ({screens.length})
+              </div>
+
+              <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                {screens.map((scr) => {
+                  const isSelected = scr.id === activeScreenId;
+                  return (
+                    <button
+                      key={scr.id}
+                      onClick={() => handleSelectScreen(scr.id)}
+                      className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                        isSelected ? 'bg-indigo-600/20 text-white font-semibold' : 'text-gray-300 hover:bg-[#181a20] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate pr-2">
+                        <Icons.Layout size={13} className={isSelected ? 'text-indigo-400' : 'text-gray-500'} />
+                        <span className="truncate">{scr.name}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-gray-500 shrink-0">{scr.route.path}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -97,16 +130,8 @@ export const LogicToolbar: React.FC = () => {
         </button>
 
         <button
-          onClick={() => alert(`Generating production React + Node.js code for ${activeScreen.name}...`)}
-          className="px-3.5 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer"
-        >
-          <Icons.Zap size={13} />
-          <span>Export Code</span>
-        </button>
-
-        <button
           onClick={handleClearCanvas}
-          className="p-1.5 rounded bg-[#181a20] hover:bg-[#232733] text-gray-400 hover:text-red-400 text-xs border border-[#232733] transition-colors cursor-pointer ml-1"
+          className="p-1.5 rounded bg-[#181a20] hover:bg-[#232733] text-gray-400 hover:text-red-400 text-xs border border-[#232733] transition-colors cursor-pointer"
           title="Clear Graph"
         >
           <Icons.Trash2 size={13} />

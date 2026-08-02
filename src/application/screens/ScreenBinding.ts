@@ -1,29 +1,26 @@
-import type { ScreenBindingRule } from './ScreenContext';
+import type { ScreenBinding } from './ScreenContext';
 
-export class ScreenBindingEngine {
-  private bindings: Map<string, ScreenBindingRule> = new Map();
+export class ScreenBindingManager {
+  private bindingsByScreen: Map<string, ScreenBinding[]> = new Map();
 
-  public addBinding(rule: ScreenBindingRule): void {
-    this.bindings.set(rule.id, rule);
+  public getBindings(screenId: string): ScreenBinding[] {
+    return this.bindingsByScreen.get(screenId) ?? [];
   }
 
-  public removeBinding(id: string): void {
-    this.bindings.delete(id);
+  public setBindings(screenId: string, bindings: ScreenBinding[]): void {
+    this.bindingsByScreen.set(screenId, bindings);
   }
 
-  public getBindingsForComponent(componentId: string): ScreenBindingRule[] {
-    return Array.from(this.bindings.values()).filter((b) => b.componentId === componentId);
+  public addBinding(screenId: string, binding: ScreenBinding): void {
+    const existing = this.getBindings(screenId);
+    this.bindingsByScreen.set(screenId, [...existing, binding]);
   }
 
-  public getBindingsForEvent(componentId: string, eventType: string): ScreenBindingRule | undefined {
-    return Array.from(this.bindings.values()).find(
-      (b) => b.componentId === componentId && b.eventType === eventType
-    );
-  }
-
-  public getAll(): ScreenBindingRule[] {
-    return Array.from(this.bindings.values());
+  public removeBinding(screenId: string, componentId: string, eventType: string): void {
+    const existing = this.getBindings(screenId);
+    const filtered = existing.filter((b) => !(b.componentId === componentId && b.eventType === eventType));
+    this.bindingsByScreen.set(screenId, filtered);
   }
 }
 
-export const screenBindingEngine = new ScreenBindingEngine();
+export const screenBindingManager = new ScreenBindingManager();

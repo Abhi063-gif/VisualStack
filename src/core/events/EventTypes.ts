@@ -1,3 +1,5 @@
+export type EventCallback<T = unknown> = (payload: T) => void;
+
 export const SystemEventType = {
   PROJECT_LOADED: 'PROJECT_LOADED',
   PROJECT_SAVED: 'PROJECT_SAVED',
@@ -14,6 +16,7 @@ export const SystemEventType = {
   LAYOUT_CHANGED: 'LAYOUT_CHANGED',
   RUNTIME_STATUS_CHANGED: 'RUNTIME_STATUS_CHANGED',
   LOG_EMITTED: 'LOG_EMITTED',
+  SCREEN_SWITCHED: 'SCREEN_SWITCHED',
   // Module 02 Canvas Events
   CANVAS_CLICKED: 'CANVAS_CLICKED',
   ZOOM_CHANGED: 'ZOOM_CHANGED',
@@ -67,14 +70,15 @@ export interface EventPayloadMap {
   [SystemEventType.CANVAS_NODE_REMOVED]: { nodeId: string };
   [SystemEventType.SELECTION_CHANGED]: { selectedIds: string[] };
   [SystemEventType.BACKEND_NODE_ADDED]: { nodeId: string; type: string };
-  [SystemEventType.BACKEND_CONNECTION_ADDED]: { connectionId: string };
+  [SystemEventType.BACKEND_CONNECTION_ADDED]: { connectionId?: string; edgeId?: string; source?: string; target?: string; sourcePort?: string; targetPort?: string };
   [SystemEventType.COMMAND_EXECUTED]: { commandId: string; description: string };
   [SystemEventType.COMMAND_UNDONE]: { commandId: string };
   [SystemEventType.COMMAND_REDONE]: { commandId: string };
   [SystemEventType.THEME_CHANGED]: { mode: 'dark' };
-  [SystemEventType.LAYOUT_CHANGED]: { sidebarVisible: boolean; inspectorVisible: boolean };
+  [SystemEventType.LAYOUT_CHANGED]: { sidebarVisible?: boolean; inspectorVisible?: boolean; screenId?: string };
   [SystemEventType.RUNTIME_STATUS_CHANGED]: { component: 'frontend' | 'backend'; status: string };
   [SystemEventType.LOG_EMITTED]: { level: string; message: string };
+  [SystemEventType.SCREEN_SWITCHED]: { screenId: string; name: string; route: string };
   // Module 02 Payload Specs
   [SystemEventType.CANVAS_CLICKED]: { x: number; y: number; button: number };
   [SystemEventType.ZOOM_CHANGED]: { zoom: number; prevZoom: number };
@@ -95,27 +99,25 @@ export interface EventPayloadMap {
   [SystemEventType.LAYER_SELECTED]: { layerId: string };
   [SystemEventType.PANEL_RESIZED]: { panel: string; size: number };
   [SystemEventType.SIDEBAR_TAB_CHANGED]: { tabId: string };
-  [SystemEventType.STATUS_CHANGED]: { zoom: number; cursorX: number; cursorY: number };
+  [SystemEventType.STATUS_CHANGED]: { zoom?: number; cursorX?: number; cursorY?: number };
   // Module 03 Part 02 Payload Specs
   [SystemEventType.NODE_MOVED]: { nodeId: string };
-  [SystemEventType.NODE_RESIZED]: { nodeId: string };
-  [SystemEventType.NODE_ROTATED]: { nodeId: string };
-  [SystemEventType.NODE_GROUPED]: { groupId: string };
-  [SystemEventType.NODE_UNGROUPED]: { groupId: string };
-  [SystemEventType.NODE_RENAMED]: { nodeId: string; newName: string };
-  [SystemEventType.NODE_LOCKED]: { nodeId: string; locked: boolean };
-  [SystemEventType.NODE_VISIBILITY_CHANGED]: { nodeId: string; visible: boolean };
-  [SystemEventType.LAYER_REORDERED]: { nodeId: string };
+  [SystemEventType.NODE_RESIZED]: { nodeId: string; width?: number; height?: number };
+  [SystemEventType.NODE_ROTATED]: { nodeId: string; rotation?: number };
+  [SystemEventType.NODE_GROUPED]: { groupId: string; childIds?: string[] };
+  [SystemEventType.NODE_UNGROUPED]: { groupId: string; childIds?: string[] };
+  [SystemEventType.NODE_RENAMED]: { nodeId: string; name: string };
+  [SystemEventType.NODE_LOCKED]: { nodeId: string; isLocked?: boolean };
+  [SystemEventType.NODE_VISIBILITY_CHANGED]: { nodeId: string; isVisible?: boolean };
+  [SystemEventType.LAYER_REORDERED]: { nodeId: string; newIndex?: number };
   [SystemEventType.LAYER_HOVERED]: { layerId: string | null };
-  // Module 04 Visual Logic & State Events
+  // Module 04 Visual Logic Specs
   [SystemEventType.LOGIC_NODE_CREATED]: { nodeId: string; type: string };
   [SystemEventType.LOGIC_NODE_DELETED]: { nodeId: string };
-  [SystemEventType.LOGIC_CONNECTION_CREATED]: { connectionId: string; source: string; target: string };
-  [SystemEventType.LOGIC_CONNECTION_REMOVED]: { connectionId: string };
-  [SystemEventType.GRAPH_EXECUTED]: { graphId?: string; timestamp: string; executionId?: string; durationMs?: number; nodesExecuted?: number; success?: boolean };
-  [SystemEventType.VARIABLE_CHANGED]: { name: string; value: unknown; scope: string };
+  [SystemEventType.LOGIC_CONNECTION_CREATED]: { edgeId?: string; connectionId?: string; source?: string; target?: string; sourcePort?: string; targetPort?: string };
+  [SystemEventType.LOGIC_CONNECTION_REMOVED]: { edgeId?: string; connectionId?: string };
+  [SystemEventType.GRAPH_EXECUTED]: { graphId: string; timestamp: string; executionId?: string; durationMs?: number; nodesExecuted?: number; success?: boolean };
+  [SystemEventType.VARIABLE_CHANGED]: { name: string; value: unknown; scope?: string };
   [SystemEventType.FUNCTION_CREATED]: { name: string };
-  [SystemEventType.FUNCTION_CALLED]: { name: string; args: unknown };
+  [SystemEventType.FUNCTION_CALLED]: { name: string };
 }
-
-export type EventCallback<T extends SystemEventType> = (payload: EventPayloadMap[T]) => void;

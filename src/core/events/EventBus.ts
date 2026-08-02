@@ -14,7 +14,7 @@ export class EventBus {
     return EventBus.instance;
   }
 
-  public on<T extends SystemEventType>(event: T, callback: EventCallback<T>): () => void {
+  public on<T extends SystemEventType>(event: T, callback: EventCallback<EventPayloadMap[T]>): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
@@ -23,7 +23,7 @@ export class EventBus {
     return () => this.off(event, callback);
   }
 
-  public off<T extends SystemEventType>(event: T, callback: EventCallback<T>): void {
+  public off<T extends SystemEventType>(event: T, callback: EventCallback<EventPayloadMap[T]>): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.delete(callback);
@@ -43,7 +43,7 @@ export class EventBus {
     }
   }
 
-  public clear(): void {
+  public removeAllListeners(): void {
     this.listeners.clear();
   }
 }

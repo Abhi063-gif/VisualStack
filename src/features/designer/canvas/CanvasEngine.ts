@@ -57,7 +57,7 @@ export class CanvasEngine {
     });
     this.layerManager = new LayerManager(this.stage);
     
-    eventBus.on(SystemEventType.LAYER_HOVERED, (payload) => {
+    eventBus.on(SystemEventType.LAYER_HOVERED, (payload: { layerId: string | null }) => {
       this.hoveredNodeId = payload.layerId;
       this.render();
     });

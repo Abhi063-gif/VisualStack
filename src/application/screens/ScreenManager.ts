@@ -1,54 +1,105 @@
 import { screenRegistry } from './ScreenRegistry';
 import type { ScreenContext } from './ScreenContext';
+import { useLogicStore } from '../../stores/LogicStore';
+import { graphManager } from '../../features/logic/graph/GraphManager';
 import { eventBus } from '../../core/events/EventBus';
 import { SystemEventType } from '../../core/events/EventTypes';
 
 export class ScreenManager {
-  private activeScreenId: string;
-  private listeners: Set<(screen: ScreenContext) => void> = new Set();
+  private activeScreenId: string = 'screen_login';
 
   constructor() {
-    const screens = screenRegistry.getAll();
-    const defaultScreen = screens.find((s) => s.isDefault) || screens[0];
-    this.activeScreenId = defaultScreen ? defaultScreen.id : 'screen_login';
+    this.activeScreenId = 'screen_login';
   }
 
-  public getActiveScreen(): ScreenContext {
-    const screen = screenRegistry.getById(this.activeScreenId);
-    if (!screen) {
-      const fallback = screenRegistry.getAll()[0];
-      this.activeScreenId = fallback.id;
-      return fallback;
-    }
-    return screen;
+  public getActiveScreenId(): string {
+    return this.activeScreenId;
   }
 
-  public setActiveScreen(screenId: string): ScreenContext {
-    const screen = screenRegistry.getById(screenId);
-    if (!screen) {
-      throw new Error(`Screen with ID "${screenId}" not found in registry.`);
+  public getActiveScreen(): ScreenContext | undefined {
+    return screenRegistry.getById(this.activeScreenId);
+  }
+
+  public getAllScreens(): ScreenContext[] {
+    return screenRegistry.getAll();
+  }
+
+  /**
+   * Switches active screen context:
+   * 1. Saves current node graph back to active screen context.
+   * 2. Loads target screen context nodes and graph state.
+   * 3. Syncs GraphManager & LogicStore.
+   */
+  public switchScreen(screenId: string): boolean {
+    const targetScreen = screenRegistry.getById(screenId);
+    if (!targetScreen) {
+      console.warn(`[ScreenManager] Screen not found: "${screenId}"`);
+      return false;
     }
 
+    // Step 1: Save current screen state
+    this.saveCurrentScreenState();
+
+    // Step 2: Set new active screen ID
     this.activeScreenId = screenId;
-    this.notifyListeners(screen);
 
-    eventBus.emit(SystemEventType.LAYOUT_CHANGED, {
-      sidebarVisible: true,
-      inspectorVisible: true,
+    // Step 3: Load target screen graph into GraphManager & LogicStore
+    this.loadScreenIntoGraph(targetScreen);
+
+    // Notify event bus
+    eventBus.emit(SystemEventType.SCREEN_SWITCHED, {
+      screenId: targetScreen.id,
+      name: targetScreen.name,
+      route: targetScreen.route.path,
     });
 
-    return screen;
+    return true;
   }
 
-  public subscribe(listener: (screen: ScreenContext) => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  public saveCurrentScreenState(): void {
+    const currentScreen = screenRegistry.getById(this.activeScreenId);
+    if (!currentScreen) return;
+
+    const { nodes, edges } = useLogicStore.getState();
+    screenRegistry.updateScreen(this.activeScreenId, {
+      nodes,
+      edges,
+    });
   }
 
-  private notifyListeners(screen: ScreenContext): void {
-    for (const listener of this.listeners) {
-      listener(screen);
-    }
+  private loadScreenIntoGraph(screen: ScreenContext): void {
+    // Reset existing graph
+    graphManager.reset();
+
+    // Re-populate graphManager nodes & edges from screen context
+    const store = useLogicStore.getState();
+    store.setNodes(screen.nodes);
+    store.setEdges(screen.edges);
+
+    // Sync variables
+    store.refreshVariables();
+  }
+
+  public createScreen(name: string, path: string): ScreenContext {
+    const id = `screen_${Date.now()}`;
+    const now = new Date().toISOString();
+    const newScreen: ScreenContext = {
+      id,
+      name,
+      route: { path, isProtected: false },
+      nodes: [],
+      edges: [],
+      bindings: [],
+      variables: [],
+      authConfig: { enabled: true, provider: 'jwt', requireAuth: false, redirectUnauthenticatedTo: '/login' },
+      storageConfig: { provider: 'local', defaultBucket: 'public' },
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    screenRegistry.registerScreen(newScreen);
+    this.switchScreen(id);
+    return newScreen;
   }
 }
 
