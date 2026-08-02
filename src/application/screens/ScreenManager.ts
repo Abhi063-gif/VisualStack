@@ -6,10 +6,10 @@ import { eventBus } from '../../core/events/EventBus';
 import { SystemEventType } from '../../core/events/EventTypes';
 
 export class ScreenManager {
-  private activeScreenId: string = 'screen_login';
+  private activeScreenId: string = 'screen_main';
 
   constructor() {
-    this.activeScreenId = 'screen_login';
+    this.activeScreenId = 'screen_main';
   }
 
   public getActiveScreenId(): string {
@@ -17,7 +17,7 @@ export class ScreenManager {
   }
 
   public getActiveScreen(): ScreenContext | undefined {
-    return screenRegistry.getById(this.activeScreenId);
+    return screenRegistry.getById(this.activeScreenId) || screenRegistry.getAll()[0];
   }
 
   public getAllScreens(): ScreenContext[] {

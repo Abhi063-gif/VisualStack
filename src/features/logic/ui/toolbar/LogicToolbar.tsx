@@ -55,6 +55,17 @@ export const LogicToolbar: React.FC = () => {
     }
   };
 
+  const handleCreateNewScreen = () => {
+    const name = window.prompt('Enter Screen Name (e.g. User Profile, Checkout Page, Dashboard):');
+    if (!name) return;
+    const path = window.prompt('Enter Route Path (e.g. /profile, /checkout, /dashboard):', `/${name.toLowerCase().replace(/\s+/g, '-')}`);
+    if (!path) return;
+
+    const newScreen = screenManager.createScreen(name, path);
+    setActiveScreenId(newScreen.id);
+    setIsDropdownOpen(false);
+  };
+
   return (
     <div className="h-12 bg-[#0e0f12] border-b border-[#232733] px-4 flex items-center justify-between select-none shrink-0 relative z-50">
       {/* Title & Screen Selector Dropdown */}
@@ -88,9 +99,16 @@ export const LogicToolbar: React.FC = () => {
 
           {isDropdownOpen && (
             <div className="absolute top-full left-0 mt-1 w-64 bg-[#14161d] border border-[#232733] rounded-lg shadow-xl py-1 z-50 box-border">
-              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-gray-400 border-b border-[#232733]">
-                Designed Screens ({screens.length})
+              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-gray-400 border-b border-[#232733] flex items-center justify-between">
+                <span>Designed Screens ({screens.length})</span>
+                <button
+                  onClick={handleCreateNewScreen}
+                  className="text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer capitalize font-sans"
+                >
+                  <Icons.Plus size={12} /> New Screen
+                </button>
               </div>
+
               <div className="max-h-60 overflow-y-auto custom-scrollbar">
                 {screens.map((scr) => (
                   <button
