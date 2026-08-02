@@ -82,6 +82,7 @@ export const DEFAULT_PROJECT_SCREENS: ScreenContext[] = [
 
 export class ScreenRegistry {
   private screens: Map<string, ScreenContext> = new Map();
+  private listeners: Set<() => void> = new Set();
 
   constructor() {
     for (const screen of DEFAULT_PROJECT_SCREENS) {
@@ -103,10 +104,42 @@ export class ScreenRegistry {
 
   public register(screen: ScreenContext): void {
     this.screens.set(screen.id, screen);
+    this.notify();
+  }
+
+  public createScreen(name: string, route: string): ScreenContext {
+    const id = `screen_${Date.now()}`;
+    const formattedRoute = route.startsWith('/') ? route : `/${route}`;
+    const screen = new ScreenContext({
+      id,
+      name,
+      route: formattedRoute,
+      description: `User generated page: ${name}`,
+      icon: 'file-text',
+      variables: [],
+      bindings: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    this.register(screen);
+    return screen;
   }
 
   public remove(id: string): boolean {
-    return this.screens.delete(id);
+    const deleted = this.screens.delete(id);
+    if (deleted) this.notify();
+    return deleted;
+  }
+
+  public subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 }
 

@@ -12,11 +12,19 @@ export const LogicToolbar: React.FC = () => {
   const { syncFromGraph, clearLogs } = useLogicStore();
   const [isRunning, setIsRunning] = useState(false);
   const [activeScreen, setActiveScreen] = useState(screenManager.getActiveScreen());
+  const [screensList, setScreensList] = useState(screenRegistry.getAll());
 
   useEffect(() => {
-    return screenManager.subscribe((screen) => {
+    const unsubManager = screenManager.subscribe((screen) => {
       setActiveScreen(screen);
     });
+    const unsubRegistry = screenRegistry.subscribe(() => {
+      setScreensList(screenRegistry.getAll());
+    });
+    return () => {
+      unsubManager();
+      unsubRegistry();
+    };
   }, []);
 
   const handleScreenChange = (screenId: string) => {
@@ -43,8 +51,6 @@ export const LogicToolbar: React.FC = () => {
     }
   };
 
-  const screens = screenRegistry.getAll();
-
   return (
     <div className="h-12 bg-[#0e0f12] border-b border-[#232733] px-4 flex items-center justify-between select-none shrink-0 box-border w-full">
       {/* Title & Screen Context Selector */}
@@ -61,7 +67,7 @@ export const LogicToolbar: React.FC = () => {
             onChange={(e) => handleScreenChange(e.target.value)}
             className="bg-transparent text-xs font-semibold text-white outline-none cursor-pointer pr-1"
           >
-            {screens.map((s) => (
+            {screensList.map((s) => (
               <option key={s.id} value={s.id} className="bg-[#14161d] text-white">
                 {s.name} ({s.route})
               </option>

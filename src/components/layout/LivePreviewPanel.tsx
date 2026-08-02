@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useLogicStore } from '../../stores/LogicStore';
 import { screenManager } from '../../application/screens/ScreenManager';
+import { screenRegistry } from '../../application/screens/ScreenRegistry';
 
 export const LivePreviewPanel: React.FC<{ isCollapsed?: boolean; onToggleCollapse?: () => void }> = ({
   isCollapsed = false,
@@ -9,13 +10,38 @@ export const LivePreviewPanel: React.FC<{ isCollapsed?: boolean; onToggleCollaps
 }) => {
   const { nodes, selectedNodeId } = useLogicStore();
   const [activeScreen, setActiveScreen] = useState(screenManager.getActiveScreen());
+  const [screensList, setScreensList] = useState(screenRegistry.getAll());
   const [zoom, setZoom] = useState<number>(0.85);
 
   useEffect(() => {
-    return screenManager.subscribe((screen) => {
+    const unsubManager = screenManager.subscribe((screen) => {
       setActiveScreen(screen);
     });
+    const unsubRegistry = screenRegistry.subscribe(() => {
+      setScreensList(screenRegistry.getAll());
+    });
+    return () => {
+      unsubManager();
+      unsubRegistry();
+    };
   }, []);
+
+  const handleScreenSelect = (screenId: string) => {
+    const selected = screenManager.setActiveScreen(screenId);
+    setActiveScreen(selected);
+  };
+
+  const handleCreateNewScreen = () => {
+    const name = window.prompt('Enter new page/screen name:', 'Custom Page');
+    if (!name) return;
+
+    const defaultRoute = `/${name.toLowerCase().replace(/\s+/g, '-')}`;
+    const route = window.prompt('Enter route path:', defaultRoute);
+    if (!route) return;
+
+    const newScreen = screenRegistry.createScreen(name, route);
+    screenManager.setActiveScreen(newScreen.id);
+  };
 
   if (isCollapsed) {
     return (
@@ -34,15 +60,40 @@ export const LivePreviewPanel: React.FC<{ isCollapsed?: boolean; onToggleCollaps
     <div className="w-full h-[280px] bg-[#0c0d12] border border-[#232733] rounded-lg flex flex-col shadow-2xl overflow-hidden box-border">
       {/* Top Preview Control Bar */}
       <div className="h-9 px-3 bg-[#14161d] border-b border-[#232733] flex items-center justify-between shrink-0 select-none">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span className="text-[11px] font-semibold text-white truncate">{activeScreen.name}</span>
-          <span className="text-[10px] font-mono text-gray-500 bg-[#181a20] px-1.5 py-0.5 rounded border border-[#232733] shrink-0">
+          
+          {/* Interactive Screen Selector Dropdown */}
+          <div className="flex items-center gap-1.5 bg-[#181a20] border border-[#232733] rounded px-2 py-0.5 hover:border-indigo-500 transition-colors shrink min-w-0 max-w-[200px]">
+            <Icons.Monitor size={12} className="text-indigo-400 shrink-0" />
+            <select
+              value={activeScreen.id}
+              onChange={(e) => handleScreenSelect(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-white outline-none cursor-pointer w-full min-w-0 truncate"
+            >
+              {screensList.map((screen) => (
+                <option key={screen.id} value={screen.id} className="bg-[#14161d] text-white">
+                  {screen.name} ({screen.route})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Create New Screen Button */}
+          <button
+            onClick={handleCreateNewScreen}
+            className="p-1 text-indigo-400 hover:text-white bg-[#181a20] hover:bg-[#232733] border border-[#232733] rounded transition-colors shrink-0"
+            title="Create New Page"
+          >
+            <Icons.Plus size={13} />
+          </button>
+
+          <span className="text-[10px] font-mono text-gray-500 bg-[#181a20] px-1.5 py-0.5 rounded border border-[#232733] shrink-0 truncate max-w-[80px]">
             {activeScreen.route}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 ml-1">
           <button
             onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
             className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#181a20] transition-colors"
