@@ -1,0 +1,172 @@
+import type { NodeDefinition } from './NodeDefinition';
+
+export const AUTH_NODE_DEFINITIONS: NodeDefinition[] = [
+  {
+    type: 'auth_login',
+    category: 'Auth',
+    name: 'User Login',
+    description: 'Authenticates a user with email and password.',
+    icon: 'log-in',
+    color: '#3b82f6',
+    inputs: [
+      { id: 'exec', name: 'Execute', type: 'execution', dataType: 'execution' },
+      { id: 'email', name: 'Email', type: 'data', dataType: 'string', color: '#10b981' },
+      { id: 'password', name: 'Password', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    outputs: [
+      { id: 'success', name: 'Success', type: 'execution', dataType: 'execution', color: '#10b981' },
+      { id: 'failure', name: 'Failed', type: 'execution', dataType: 'execution', color: '#ef4444' },
+      { id: 'user', name: 'User Object', type: 'data', dataType: 'object', color: '#f59e0b' },
+      { id: 'token', name: 'Auth Token', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    defaultConfig: {},
+  },
+  {
+    type: 'auth_signup',
+    category: 'Auth',
+    name: 'User Signup',
+    description: 'Registers a new user account.',
+    icon: 'user-plus',
+    color: '#3b82f6',
+    inputs: [
+      { id: 'exec', name: 'Execute', type: 'execution', dataType: 'execution' },
+      { id: 'email', name: 'Email', type: 'data', dataType: 'string', color: '#10b981' },
+      { id: 'password', name: 'Password', type: 'data', dataType: 'string', color: '#10b981' },
+      { id: 'metadata', name: 'User Metadata', type: 'data', dataType: 'object', color: '#f59e0b' },
+    ],
+    outputs: [
+      { id: 'success', name: 'Success', type: 'execution', dataType: 'execution', color: '#10b981' },
+      { id: 'error', name: 'Error', type: 'execution', dataType: 'execution', color: '#ef4444' },
+      { id: 'user', name: 'User Object', type: 'data', dataType: 'object', color: '#f59e0b' },
+    ],
+    defaultConfig: {},
+  },
+  {
+    type: 'auth_logout',
+    category: 'Auth',
+    name: 'User Logout',
+    description: 'Logs out the active user session.',
+    icon: 'log-out',
+    color: '#64748b',
+    inputs: [
+      { id: 'exec', name: 'Execute', type: 'execution', dataType: 'execution' },
+    ],
+    outputs: [
+      { id: 'exec', name: 'Then', type: 'execution', dataType: 'execution' },
+    ],
+    defaultConfig: {},
+  },
+  {
+    type: 'auth_get_current_user',
+    category: 'Auth',
+    name: 'Get Current User',
+    description: 'Retrieves profile & role information for the active user session.',
+    icon: 'user-check',
+    color: '#3b82f6',
+    inputs: [],
+    outputs: [
+      { id: 'user', name: 'User', type: 'data', dataType: 'object', color: '#f59e0b' },
+      { id: 'authenticated', name: 'Is Authenticated', type: 'data', dataType: 'boolean', color: '#ef4444' },
+      { id: 'role', name: 'Role', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    defaultConfig: {},
+  },
+  {
+    type: 'auth_social_oauth',
+    category: 'Auth',
+    name: 'Social OAuth Login',
+    description: 'Authenticates with Google, GitHub, Apple, or custom OAuth provider.',
+    icon: 'globe',
+    color: '#4285f4',
+    inputs: [
+      { id: 'exec', name: 'Execute', type: 'execution', dataType: 'execution' },
+    ],
+    outputs: [
+      { id: 'success', name: 'Success', type: 'execution', dataType: 'execution', color: '#10b981' },
+      { id: 'error', name: 'Error', type: 'execution', dataType: 'execution', color: '#ef4444' },
+      { id: 'user', name: 'User Profile', type: 'data', dataType: 'object', color: '#f59e0b' },
+    ],
+    defaultConfig: { provider: 'google' },
+  },
+  {
+    type: 'auth_hash_password',
+    category: 'Auth',
+    name: 'Hash Password',
+    description: 'Hashes a plain text password using bcrypt or Argon2.',
+    icon: 'key',
+    color: '#8b5cf6',
+    inputs: [
+      { id: 'password', name: 'Password', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    outputs: [
+      { id: 'hash', name: 'Hashed Password', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    defaultConfig: { saltRounds: 10 },
+  },
+  {
+    type: 'auth_verify_password',
+    category: 'Auth',
+    name: 'Verify Password',
+    description: 'Compares a plain text password against a hashed password.',
+    icon: 'shield-check',
+    color: '#8b5cf6',
+    inputs: [
+      { id: 'password', name: 'Plain Password', type: 'data', dataType: 'string', color: '#10b981' },
+      { id: 'hash', name: 'Hash', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    outputs: [
+      { id: 'valid', name: 'Is Match', type: 'data', dataType: 'boolean', color: '#ef4444' },
+    ],
+    defaultConfig: {},
+  },
+  {
+    type: 'auth_jwt_sign',
+    category: 'Auth',
+    name: 'Sign JWT Token',
+    description: 'Generates a signed JSON Web Token (JWT).',
+    icon: 'lock',
+    color: '#8b5cf6',
+    inputs: [
+      { id: 'payload', name: 'Payload', type: 'data', dataType: 'object', color: '#f59e0b' },
+      { id: 'secret', name: 'Secret Key', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    outputs: [
+      { id: 'token', name: 'JWT Token', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    defaultConfig: { expiresIn: '1d' },
+  },
+  {
+    type: 'auth_jwt_verify',
+    category: 'Auth',
+    name: 'Verify JWT Token',
+    description: 'Verifies and decodes a JWT token.',
+    icon: 'unlock',
+    color: '#8b5cf6',
+    inputs: [
+      { id: 'token', name: 'JWT Token', type: 'data', dataType: 'string', color: '#10b981' },
+      { id: 'secret', name: 'Secret Key', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    outputs: [
+      { id: 'valid', name: 'Is Valid', type: 'data', dataType: 'boolean', color: '#ef4444' },
+      { id: 'payload', name: 'Decoded Payload', type: 'data', dataType: 'object', color: '#f59e0b' },
+    ],
+    defaultConfig: {},
+  },
+  {
+    type: 'auth_check_role',
+    category: 'Auth',
+    name: 'Check Role / Permission',
+    description: 'Verifies if the user has a required role (e.g. Admin, Editor).',
+    icon: 'shield',
+    color: '#8b5cf6',
+    inputs: [
+      { id: 'exec', name: 'Execute', type: 'execution', dataType: 'execution' },
+      { id: 'requiredRole', name: 'Required Role', type: 'data', dataType: 'string', color: '#10b981' },
+    ],
+    outputs: [
+      { id: 'allowed', name: 'Allowed', type: 'execution', dataType: 'execution', color: '#10b981' },
+      { id: 'denied', name: 'Denied', type: 'execution', dataType: 'execution', color: '#ef4444' },
+    ],
+    defaultConfig: { requiredRole: 'admin' },
+  },
+];

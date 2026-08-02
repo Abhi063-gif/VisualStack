@@ -1,0 +1,1 @@
+export { CanvasPluginHooks } from './CanvasPluginHooks';
