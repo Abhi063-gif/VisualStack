@@ -5,11 +5,13 @@ import { LogicToolbar } from '../features/logic/ui/toolbar/LogicToolbar';
 import { PropertyPanel } from '../features/logic/ui/inspector/PropertyPanel';
 import { ExecutionConsole } from '../features/logic/ui/console/ExecutionConsole';
 import { LogicCanvasContent } from '../features/logic/ui/canvas/LogicCanvas';
+import { LivePreviewPanel } from '../components/layout/LivePreviewPanel';
 
 export const BackendPage: React.FC = () => {
   const [leftWidth, setLeftWidth] = useState(260);
   const [rightWidth, setRightWidth] = useState(280);
   const [consoleHeight, setConsoleHeight] = useState(160);
+  const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
 
   const isDraggingLeftRef = useRef(false);
   const isDraggingRightRef = useRef(false);
@@ -101,11 +103,19 @@ export const BackendPage: React.FC = () => {
             title="Drag to resize Node Library width"
           />
 
-          {/* Center Column (Canvas + Execution Console) */}
+          {/* Center Column (Canvas + Floating Live Preview + Execution Console) */}
           <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
             {/* Logic Canvas */}
             <div className="flex-1 relative min-w-0 h-full overflow-hidden">
               <LogicCanvasContent />
+
+              {/* Floating Live Frontend Preview Panel (Top Right overlay) */}
+              <div className="absolute top-4 right-4 z-30 max-w-[380px] shadow-2xl">
+                <LivePreviewPanel
+                  isCollapsed={isPreviewCollapsed}
+                  onToggleCollapse={() => setIsPreviewCollapsed(!isPreviewCollapsed)}
+                />
+              </div>
             </div>
 
             {/* Console Resize Handle */}
