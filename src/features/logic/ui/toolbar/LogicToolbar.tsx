@@ -8,6 +8,9 @@ import { screenManager } from '../../../../application/screens/ScreenManager';
 import { projectModelExporter } from '../../../../application/ir/ProjectModelExporter';
 import { WorkspaceModal } from '../../../../components/layout/WorkspaceModal';
 import { LivePreviewPanel } from '../../../../components/preview/LivePreviewPanel';
+import { FileExplorerModal } from '../../../../components/explorer/FileExplorerModal';
+import { PackageManagerModal } from '../../../../components/packages/PackageManagerModal';
+import { EnvironmentModal } from '../../../../components/config/EnvironmentModal';
 
 export const LogicToolbar: React.FC = () => {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -15,8 +18,13 @@ export const LogicToolbar: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [activeScreenId, setActiveScreenId] = useState<string>(screenManager.getActiveScreenId());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Modals
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
+  const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(false);
+  const [isPackageManagerOpen, setIsPackageManagerOpen] = useState(false);
+  const [isEnvironmentOpen, setIsEnvironmentOpen] = useState(false);
 
   const screens = screenManager.getAllScreens();
   const activeScreen = screens.find((s) => s.id === activeScreenId) || screens[0];
@@ -102,8 +110,37 @@ export const LogicToolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Controls: Workspace Modal, Live Preview, Run Graph, Export IR JSON */}
+        {/* Right Controls: Files, Packages, Env, Live Preview, Run Graph, Export IR JSON */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsFileExplorerOpen(true)}
+            className="px-2 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-gray-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Files Explorer"
+          >
+            <Icons.FolderTree size={14} className="text-amber-400" />
+            <span>Files</span>
+          </button>
+
+          <button
+            onClick={() => setIsPackageManagerOpen(true)}
+            className="px-2 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-gray-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Package Manager"
+          >
+            <Icons.PackagePlus size={14} className="text-indigo-400" />
+            <span>Packages</span>
+          </button>
+
+          <button
+            onClick={() => setIsEnvironmentOpen(true)}
+            className="px-2 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-gray-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Environment Variables (.env)"
+          >
+            <Icons.KeyRound size={14} className="text-cyan-400" />
+            <span>.env</span>
+          </button>
+
+          <div className="h-4 w-[1px] bg-[#232733]" />
+
           <button
             onClick={() => setIsPreviewPanelOpen(true)}
             className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow"
@@ -174,6 +211,9 @@ export const LogicToolbar: React.FC = () => {
 
       <WorkspaceModal isOpen={isWorkspaceModalOpen} onClose={() => setIsWorkspaceModalOpen(false)} />
       <LivePreviewPanel isOpen={isPreviewPanelOpen} onClose={() => setIsPreviewPanelOpen(false)} />
+      <FileExplorerModal isOpen={isFileExplorerOpen} onClose={() => setIsFileExplorerOpen(false)} />
+      <PackageManagerModal isOpen={isPackageManagerOpen} onClose={() => setIsPackageManagerOpen(false)} />
+      <EnvironmentModal isOpen={isEnvironmentOpen} onClose={() => setIsEnvironmentOpen(false)} />
     </>
   );
 };
