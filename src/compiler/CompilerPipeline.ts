@@ -3,6 +3,7 @@ import type { ProjectIR } from './ir/ProjectIR';
 import { projectModelExporter } from '../application/ir/ProjectModelExporter';
 import { compilerValidator } from './validation/CompilerValidator';
 import { compilerOptimizer } from './optimization/CompilerOptimizer';
+import { codeGenerator } from './generators/CodeGenerator';
 
 export class CompilerPipeline {
   public async execute(context: CompilerContext): Promise<GeneratedFile[]> {
@@ -217,96 +218,15 @@ export class CompilerPipeline {
 
   private stage5Generate(context: CompilerContext): void {
     if (!context.ir) return;
-
-    const files: GeneratedFile[] = [];
-
-    // package.json
-    files.push({
-      path: 'package.json',
-      type: 'json',
-      content: JSON.stringify(
-        {
-          name: context.ir.metadata.name.toLowerCase().replace(/\s+/g, '-'),
-          version: '1.0.0',
-          private: true,
-          type: 'module',
-          scripts: {
-            dev: 'concurrently "npm run server" "vite"',
-            build: 'vite build',
-            server: 'tsx server/index.ts',
-          },
-          dependencies: {
-            react: '^19.0.0',
-            'react-dom': '^19.0.0',
-            'react-router-dom': '^7.0.0',
-            express: '^4.21.0',
-            cors: '^2.8.5',
-            dotenv: '^16.4.5',
-          },
-        },
-        null,
-        2
-      ),
+    const output = codeGenerator.generate({
+      ir: context.ir,
+      targetFramework: context.options.targetFramework,
+      language: context.options.language,
+      cssFramework: context.options.cssFramework,
+      diagnostics: context.diagnostics,
+      logger: context.logger,
     });
-
-    // Main Router
-    files.push({
-      path: 'src/main.tsx',
-      type: 'typescript',
-      content: `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-${context.ir.screens.map((s, idx) => `import Screen${idx} from './pages/${s.name.replace(/\s+/g, '')}';`).join('\n')}
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        ${context.ir.screens.map((s, idx) => `<Route path="${s.route.path}" element={<Screen${idx} />} />`).join('\n        ')}
-      </Routes>
-    </BrowserRouter>
-  </React.StrictMode>
-);`,
-    });
-
-    // Generate Pages
-    for (const scr of context.ir.screens) {
-      const pageName = scr.name.replace(/\s+/g, '');
-      files.push({
-        path: `src/pages/${pageName}.tsx`,
-        type: 'typescript',
-        content: `import React from 'react';
-
-export default function ${pageName}() {
-  return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-8">
-      <h1 className="text-3xl font-bold">${scr.name}</h1>
-      <p className="text-gray-400 text-sm mt-2">Route: ${scr.route.path}</p>
-    </div>
-  );
-}`,
-      });
-    }
-
-    // Express Server
-    files.push({
-      path: 'server/index.ts',
-      type: 'typescript',
-      content: `import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-
-dotenv.config();
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-
-app.listen(3000, () => console.log('[VisualStack Server] Running on port 3000'));`,
-    });
-
-    context.generatedFiles = files;
+    context.generatedFiles = output.files;
   }
 
   private stage6Format(context: CompilerContext): void {
