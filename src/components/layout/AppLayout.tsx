@@ -52,12 +52,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Fixed-width Activity Bar (48px) */}
         <ActivityBar />
 
+        {/* Fixed-width Node Palette Tools Bar (200px) on Designer Route */}
+        {isDesignerRoute && <ToolsBar />}
+
         {/* Resizable Work Area: Left Drawer + Main Canvas + Right Inspector */}
         <div style={{ flex: 1, overflow: 'hidden', minWidth: 0, minHeight: 0 }}>
           {isDesignerRoute ? (
             <Group orientation="horizontal" style={{ width: '100%', height: '100%' }}>
-              {/* Left Toolbox Drawer */}
-              <Panel defaultSize={20} minSize={1} style={{ overflow: 'hidden', minWidth: 0 }}>
+              {/* Left Drawer (Pages, Layers, Components/Assets) */}
+              <Panel defaultSize={20} minSize={10} style={{ overflow: 'hidden', minWidth: 0 }}>
                 <ToolboxPanel />
               </Panel>
 
@@ -67,16 +70,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#232733'; }}
               />
 
-              {/* Center Canvas Area with ToolsBar on top and BottomPanel at bottom */}
+              {/* Center Canvas Area & Bottom Panel */}
               <Panel defaultSize={55} minSize={30} style={{ overflow: 'hidden', minWidth: 0 }}>
                 <Group orientation="vertical" style={{ width: '100%', height: '100%' }}>
                   {/* Canvas Viewport Panel */}
-                  <Panel defaultSize={75} minSize={20} style={{ overflow: 'hidden', minHeight: 0 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-                      <ToolsBar />
-                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#090a0f' }}>
-                        {children}
-                      </div>
+                  <Panel defaultSize={72} minSize={20} style={{ overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#090a0f' }}>
+                      {children}
                     </div>
                   </Panel>
 
@@ -87,7 +87,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   />
 
                   {/* Bottom Console Panel */}
-                  <Panel defaultSize={25} minSize={5} style={{ overflow: 'hidden', minHeight: 0 }}>
+                  <Panel defaultSize={28} minSize={5} style={{ overflow: 'hidden', minHeight: 0 }}>
                     <BottomPanel />
                   </Panel>
                 </Group>
@@ -100,7 +100,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               />
 
               {/* Right Inspector Panel */}
-              <Panel defaultSize={25} minSize={1} style={{ overflow: 'hidden', minWidth: 0 }}>
+              <Panel defaultSize={25} minSize={10} style={{ overflow: 'hidden', minWidth: 0 }}>
                 <InspectorPanel />
               </Panel>
             </Group>
