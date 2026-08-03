@@ -7,18 +7,7 @@ export interface CustomDomainConfig {
 }
 
 export class DomainManager {
-  private domains: CustomDomainConfig[] = [
-    {
-      id: 'dom_01',
-      domain: 'app.visualstack.io',
-      verified: true,
-      sslActive: true,
-      dnsRecords: [
-        { type: 'CNAME', name: 'app', value: 'cname.vercel-dns.com' },
-        { type: 'A', name: '@', value: '76.76.21.21' },
-      ],
-    },
-  ];
+  private domains: CustomDomainConfig[] = [];
 
   public getDomains(): CustomDomainConfig[] {
     return [...this.domains];
@@ -31,11 +20,15 @@ export class DomainManager {
       verified: false,
       sslActive: false,
       dnsRecords: [
-        { type: 'CNAME', name: domain.split('.')[0], value: 'cname.vercel-dns.com' },
+        { type: 'CNAME', name: domain.split('.')[0], value: 'cname.visualstack-dns.com' },
       ],
     };
     this.domains.push(item);
     return item;
+  }
+
+  public removeDomain(id: string): void {
+    this.domains = this.domains.filter((d) => d.id !== id);
   }
 }
 

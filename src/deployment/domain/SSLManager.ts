@@ -7,18 +7,22 @@ export interface SSLCertificateInfo {
 }
 
 export class SSLManager {
-  private certs: SSLCertificateInfo[] = [
-    {
-      domain: 'app.visualstack.io',
-      issuer: "Let's Encrypt Authority X3",
-      validFrom: '2026-01-01',
-      validTo: '2026-12-31',
-      status: 'active',
-    },
-  ];
+  private certs: SSLCertificateInfo[] = [];
 
   public getCertificates(): SSLCertificateInfo[] {
     return [...this.certs];
+  }
+
+  public registerCertificate(domain: string): SSLCertificateInfo {
+    const item: SSLCertificateInfo = {
+      domain,
+      issuer: "Let's Encrypt Authority X3",
+      validFrom: new Date().toISOString().split('T')[0],
+      validTo: new Date(Date.now() + 31536000000).toISOString().split('T')[0],
+      status: 'active',
+    };
+    this.certs.push(item);
+    return item;
   }
 
   public async renewCertificate(domain: string): Promise<boolean> {

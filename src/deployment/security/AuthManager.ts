@@ -1,34 +1,43 @@
 export interface ProviderCredential {
   providerId: string;
   providerName: string;
-  accountName: string;
+  accountName?: string;
   hasToken: boolean;
 }
 
 export class AuthManager {
-  private credentials: Map<string, string> = new Map([
-    ['vercel', 'vcl_token_encrypted_019283'],
-    ['github', 'ghp_token_encrypted_981234'],
-    ['aws', 'aws_key_encrypted_887123'],
-  ]);
+  private credentials: Map<string, { token: string; accountName?: string }> = new Map();
 
   public getCredentials(): ProviderCredential[] {
-    const list: ProviderCredential[] = [
-      { providerId: 'github', providerName: 'GitHub', accountName: 'Abhi063-gif', hasToken: this.credentials.has('github') },
-      { providerId: 'vercel', providerName: 'Vercel', accountName: 'visualstack-team', hasToken: this.credentials.has('vercel') },
-      { providerId: 'netlify', providerName: 'Netlify', accountName: 'Unlinked', hasToken: this.credentials.has('netlify') },
-      { providerId: 'aws', providerName: 'AWS', accountName: 'prod-account', hasToken: this.credentials.has('aws') },
-      { providerId: 'docker', providerName: 'Docker Hub', accountName: 'visualstack', hasToken: this.credentials.has('docker') },
+    const providers = [
+      { id: 'github', name: 'GitHub' },
+      { id: 'vercel', name: 'Vercel' },
+      { id: 'netlify', name: 'Netlify' },
+      { id: 'aws', name: 'AWS' },
+      { id: 'docker', name: 'Docker Hub' },
     ];
-    return list;
+
+    return providers.map((p) => {
+      const entry = this.credentials.get(p.id);
+      return {
+        providerId: p.id,
+        providerName: p.name,
+        accountName: entry?.accountName,
+        hasToken: Boolean(entry?.token),
+      };
+    });
   }
 
-  public setToken(providerId: string, token: string): void {
-    this.credentials.set(providerId, token);
+  public setToken(providerId: string, token: string, accountName?: string): void {
+    this.credentials.set(providerId, { token, accountName });
+  }
+
+  public removeToken(providerId: string): void {
+    this.credentials.delete(providerId);
   }
 
   public getToken(providerId: string): string | undefined {
-    return this.credentials.get(providerId);
+    return this.credentials.get(providerId)?.token;
   }
 }
 

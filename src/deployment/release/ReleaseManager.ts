@@ -6,17 +6,21 @@ export interface ReleaseVersion {
 }
 
 export class ReleaseManager {
-  private releases: ReleaseVersion[] = [
-    {
-      version: 'v1.0.0',
-      releaseNotes: 'First stable production release powered by VisualStack Studio.',
-      createdDate: new Date().toISOString(),
-      downloadUrl: '#',
-    },
-  ];
+  private releases: ReleaseVersion[] = [];
 
   public getReleases(): ReleaseVersion[] {
     return [...this.releases];
+  }
+
+  public createRelease(version: string, releaseNotes: string): ReleaseVersion {
+    const item: ReleaseVersion = {
+      version,
+      releaseNotes,
+      createdDate: new Date().toISOString(),
+      downloadUrl: '#',
+    };
+    this.releases.unshift(item);
+    return item;
   }
 }
 

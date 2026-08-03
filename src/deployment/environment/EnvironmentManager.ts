@@ -8,11 +8,7 @@ export interface EnvVariableItem {
 }
 
 export class EnvironmentManager {
-  private variables: EnvVariableItem[] = [
-    { key: 'VITE_API_URL', value: 'https://api.visualstack.io', target: 'production', isSecret: false },
-    { key: 'PORT', value: '8080', target: 'production', isSecret: false },
-    { key: 'NODE_ENV', value: 'production', target: 'production', isSecret: false },
-  ];
+  private variables: EnvVariableItem[] = [];
 
   public getVariables(target?: DeploymentEnvTarget): EnvVariableItem[] {
     if (!target) return [...this.variables];
@@ -26,6 +22,10 @@ export class EnvironmentManager {
     } else {
       this.variables.push(item);
     }
+  }
+
+  public removeVariable(key: string, target: DeploymentEnvTarget): void {
+    this.variables = this.variables.filter((v) => !(v.key === key && v.target === target));
   }
 }
 

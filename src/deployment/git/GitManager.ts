@@ -31,47 +31,10 @@ export interface GitDiffResult {
 export class GitManager {
   private currentBranch = 'main';
   private remoteUrl = 'https://github.com/Abhi063-gif/VisualStack.git';
-  
-  private uncommittedFiles: GitFileStatus[] = [
-    { path: 'src/features/designer/Canvas.tsx', status: 'modified', staged: true, additions: 14, deletions: 2 },
-    { path: 'src/components/layout/AppLayout.tsx', status: 'modified', staged: true, additions: 28, deletions: 12 },
-    { path: 'src/deployment/git/GitManager.ts', status: 'added', staged: false, additions: 110, deletions: 0 },
-  ];
-
-  private commitHistory: GitCommitItem[] = [
-    {
-      hash: '7167aa48192a7e4d82',
-      shortHash: '7167aa4',
-      author: 'Antigravity AI',
-      email: 'devops@visualstack.io',
-      date: new Date().toISOString(),
-      message: 'feat(module-08): Complete Phase 1 - Deployment Center Core & 18 Provider Connectors',
-      branch: 'main',
-    },
-    {
-      hash: '25ef8c1289a19e831',
-      shortHash: '25ef8c1',
-      author: 'Antigravity AI',
-      email: 'devops@visualstack.io',
-      date: new Date(Date.now() - 1800000).toISOString(),
-      message: 'feat(module-08): Complete Module 08 Deployment Engine architecture',
-      branch: 'main',
-    },
-    {
-      hash: 'ff65dbb8192a7e4d82',
-      shortHash: 'ff65dbb',
-      author: 'Antigravity AI',
-      email: 'devops@visualstack.io',
-      date: new Date(Date.now() - 3600000).toISOString(),
-      message: 'fix(layout): Restore exact VisualStack Studio frontend layout structure',
-      branch: 'main',
-    },
-  ];
-
-  private branches: string[] = ['main', 'feature/module-08-devops', 'staging', 'production'];
-  private stashes: Array<{ id: string; message: string; date: string }> = [
-    { id: 'stash@{0}', message: 'WIP on main: Auto-save canvas state', date: new Date(Date.now() - 7200000).toISOString() },
-  ];
+  private uncommittedFiles: GitFileStatus[] = [];
+  private commitHistory: GitCommitItem[] = [];
+  private branches: string[] = ['main'];
+  private stashes: Array<{ id: string; message: string; date: string }> = [];
 
   public getCurrentBranch(): string { return this.currentBranch; }
   public getRemoteUrl(): string { return this.remoteUrl; }
@@ -98,13 +61,24 @@ export class GitManager {
     this.uncommittedFiles.forEach((f) => (f.staged = false));
   }
 
+  public addFileChange(path: string, status: GitFileStatus['status'], additions = 0, deletions = 0): void {
+    const existing = this.uncommittedFiles.find((f) => f.path === path);
+    if (existing) {
+      existing.status = status;
+      existing.additions += additions;
+      existing.deletions += deletions;
+    } else {
+      this.uncommittedFiles.push({ path, status, staged: false, additions, deletions });
+    }
+  }
+
   public commit(message: string, isAmend = false): GitCommitItem {
     const hash = Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
     const item: GitCommitItem = {
       hash,
       shortHash: hash.slice(0, 7),
-      author: 'Antigravity AI',
-      email: 'devops@visualstack.io',
+      author: 'Developer',
+      email: 'dev@visualstack.io',
       date: new Date().toISOString(),
       message,
       branch: this.currentBranch,
@@ -174,10 +148,8 @@ export class GitManager {
     return {
       filePath,
       lines: [
-        { type: 'context', lineNumberOld: 1, lineNumberNew: 1, content: 'import React from "react";' },
-        { type: 'delete', lineNumberOld: 2, content: '- const version = "1.0.0";' },
-        { type: 'add', lineNumberNew: 2, content: '+ const version = "2.0.0-module-08";' },
-        { type: 'context', lineNumberOld: 3, lineNumberNew: 3, content: 'export const App = () => {};' },
+        { type: 'context', lineNumberOld: 1, lineNumberNew: 1, content: `// File: ${filePath}` },
+        { type: 'add', lineNumberNew: 2, content: '+ // Modified in VisualStack Studio' },
       ],
     };
   }

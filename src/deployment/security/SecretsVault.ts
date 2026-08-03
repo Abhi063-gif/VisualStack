@@ -6,11 +6,7 @@ export interface VaultSecret {
 }
 
 export class SecretsVault {
-  private secrets: Map<string, { value: string; category: VaultSecret['category']; updatedAt: string }> = new Map([
-    ['DATABASE_URL', { value: 'postgres://user:pass@db.visualstack.io:5432/app', category: 'db_pass', updatedAt: new Date().toISOString() }],
-    ['JWT_SECRET_KEY', { value: 'super_secret_jwt_encryption_key_2026', category: 'jwt_secret', updatedAt: new Date().toISOString() }],
-    ['STRIPE_API_KEY', { value: 'sk_live_51M00192837482910', category: 'api_key', updatedAt: new Date().toISOString() }],
-  ]);
+  private secrets: Map<string, { value: string; category: VaultSecret['category']; updatedAt: string }> = new Map();
 
   public getSecrets(): VaultSecret[] {
     const list: VaultSecret[] = [];
@@ -28,6 +24,10 @@ export class SecretsVault {
 
   public setSecret(key: string, value: string, category: VaultSecret['category']): void {
     this.secrets.set(key, { value, category, updatedAt: new Date().toISOString() });
+  }
+
+  public deleteSecret(key: string): boolean {
+    return this.secrets.delete(key);
   }
 
   public getDecryptedSecret(key: string): string | undefined {

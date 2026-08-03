@@ -7,13 +7,19 @@ export interface CronJobConfig {
 }
 
 export class Scheduler {
-  private jobs: CronJobConfig[] = [
-    { id: 'cron_nightly', name: 'Nightly Staging Build', expression: '0 0 * * *', targetProvider: 'Vercel', active: true },
-    { id: 'cron_weekly', name: 'Weekly Production Release', expression: '0 2 * * 1', targetProvider: 'AWS EC2', active: false },
-  ];
+  private jobs: CronJobConfig[] = [];
 
   public getJobs(): CronJobConfig[] {
     return [...this.jobs];
+  }
+
+  public addJob(job: Omit<CronJobConfig, 'id'>): CronJobConfig {
+    const item: CronJobConfig = {
+      id: `cron_${Date.now()}`,
+      ...job,
+    };
+    this.jobs.push(item);
+    return item;
   }
 }
 
