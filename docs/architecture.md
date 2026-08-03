@@ -1,11 +1,9 @@
-# VisualStack Studio Architecture
+# VisualStack Studio Architecture Overview (Modules 01 - 09)
 
-VisualStack Studio is built on a modular engine architecture:
-1. **Module 01**: EventBus, Services & Core Architecture
-2. **Module 02**: Compiler & Multi-Framework Code Generators
-3. **Module 03**: Designer Engine, SceneGraph & Canvas
-4. **Module 04**: Visual Logic Engine & Workflow Interpreter
-5. **Module 05**: Resource Manager & Asset Pipeline
-6. **Module 06**: Code Inspector & Exporter
-7. **Module 07**: Local Runtime Environment, Dev Server & Live Preview
-8. **Module 08**: Deployment Engine, DevOps, Git Integration & Cloud Infrastructure
+## Modular Stack Architecture
+1. **Core Systems**: EventBus, CommandManager, State Stores (HistoryStore, SelectionStore, LogicStore).
+2. **UI Designer Engine**: Konva Canvas, Layers, Frames, Auto Layout, CSS Token System.
+3. **Backend Logic Workflow Engine**: React Flow graph nodes, HTTP Triggers, DB Actions, Auth Nodes, Execution Engine.
+4. **Compiler Engine**: AST transformations to React, Next.js, Vue, Express, Python, Spring Boot bundles.
+5. **Deployment & DevOps Engine**: 18 Cloud Provider SDK Connectors, Visual Git Panel, Docker Engine, Encrypted Secrets Vault, Custom Domains & SSL Verification, Health Checker, Visual CI/CD Builder.
+6. **AI Intelligence & Autonomous Agent Engine**: IAIProvider abstraction, ContextEngine, ProjectMemory, ToolCallingEngine, AutonomousAgent, AIChatPanel, AICommandPalette.

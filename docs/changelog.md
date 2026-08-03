@@ -1,9 +1,11 @@
-# Changelog
+# Module 09 Changelog
 
-## [1.8.0] - Module 08 Complete
-- **Deployment Engine**: DeploymentCenter, DeploymentManager, DeploymentPipeline, DeploymentSession, DeploymentStatus, DeploymentHistory.
-- **18 Provider Connectors**: Vercel, Netlify, Railway, Firebase, Cloudflare, AWS Amplify, AWS EC2, AWS S3, Azure App Service, Google Cloud Run, Docker, DigitalOcean, Render, Fly.io, Hostinger, Custom VPS, GitHub Pages, Local Server.
-- **Git Engine**: GitManager & VisualGitPanel with visual commit graph timeline & file diffs.
-- **Docker Engine**: DockerManager & RegistryManager for Docker Hub, GHCR, ECR, ACR, GCR.
-- **Security & Vault**: AuthManager & SecretsVault with AES-256 local encrypted storage.
-- **Deployment Dashboard**: Dedicated `/deployment` screen & TopToolbar integration.
+- **v1.0.0 (Module 09 Release)**:
+  - Added `IAIProvider` core interface and 10 Provider Connectors.
+  - Added `AIModelManager` for tuning temperature, top-P, and context parameters.
+  - Implemented `ContextEngine` and `ProjectMemory` persistent preference engine.
+  - Implemented `ToolCallingEngine` for executing internal Git, Deployment, Docker, Secrets, and Domain APIs.
+  - Added `AIChatPanel` copilot drawer and `AICommandPalette` spotlight search modal (`Ctrl+K`).
+  - Added `AIChatPanel` trigger directly into the Backend Logic Workflow Toolbar.
+  - Implemented `AutonomousAgent` and `TaskPlanner` for end-to-end software development automation.
+  - Added `AIDebugger`, `ImageUnderstanding` wireframe parser, and `VoiceAssistant` speech-to-text runner.
