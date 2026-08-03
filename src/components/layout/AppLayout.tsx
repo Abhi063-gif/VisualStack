@@ -17,6 +17,15 @@ export interface AppLayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation();
   const isDesignerRoute = location.pathname === '/designer';
+  const isPreviewRoute = location.pathname === '/preview';
+
+  if (isPreviewRoute) {
+    return (
+      <div className="w-full h-full min-h-screen bg-[#090a0f] text-white overflow-auto">
+        {children}
+      </div>
+    );
+  }
 
   return (
     // position:fixed + inset:0 guarantees exactly the viewport with no overflow
@@ -43,69 +52,49 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Fixed-width Activity Bar (48px) */}
         <ActivityBar />
 
-        {/* Fixed-width Tools Bar (40px) — ONLY FOR FRONTEND UI DESIGNER */}
-        {isDesignerRoute && <ToolsBar />}
-
-        {/* Workspace Area */}
-        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', height: '100%' }}>
+        {/* Resizable Work Area: Left Drawer + Main Canvas + Right Inspector */}
+        <div style={{ flex: 1, overflow: 'hidden', minWidth: 0, minHeight: 0 }}>
           {isDesignerRoute ? (
-            /* Frontend Designer Route: Show Frontend Toolbox, Canvas, Bottom Panel & Inspector */
             <Group orientation="horizontal" style={{ width: '100%', height: '100%' }}>
-              {/* Left Sidebar */}
-              <Panel defaultSize={15} minSize={1} style={{ overflow: 'hidden', minWidth: 0 }}>
+              {/* Left Toolbox Drawer */}
+              <Panel defaultSize={20} minSize={1} style={{ overflow: 'hidden', minWidth: 0 }}>
                 <ToolboxPanel />
               </Panel>
 
               <Separator
-                style={{
-                  width: '5px',
-                  minWidth: '5px',
-                  background: '#232733',
-                  cursor: 'col-resize',
-                  flexShrink: 0,
-                  transition: 'background 0.15s',
-                }}
+                style={{ width: '5px', background: '#232733', cursor: 'col-resize', transition: 'background 0.15s' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#6366f1'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#232733'; }}
               />
 
-              {/* Center Column */}
-              <Panel defaultSize={60} minSize={1} style={{ overflow: 'hidden', minWidth: 0 }}>
+              {/* Center Canvas Area with ToolsBar on top and BottomPanel at bottom */}
+              <Panel defaultSize={55} minSize={30} style={{ overflow: 'hidden', minWidth: 0 }}>
                 <Group orientation="vertical" style={{ width: '100%', height: '100%' }}>
-                  {/* Canvas Area */}
-                  <Panel defaultSize={72} minSize={1} style={{ overflow: 'hidden', position: 'relative' }}>
-                    {children}
+                  {/* Canvas Viewport Panel */}
+                  <Panel defaultSize={75} minSize={20} style={{ overflow: 'hidden', minHeight: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+                      <ToolsBar />
+                      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#090a0f' }}>
+                        {children}
+                      </div>
+                    </div>
                   </Panel>
 
                   <Separator
-                    style={{
-                      height: '5px',
-                      minHeight: '5px',
-                      background: '#232733',
-                      cursor: 'row-resize',
-                      flexShrink: 0,
-                      transition: 'background 0.15s',
-                    }}
+                    style={{ height: '5px', background: '#232733', cursor: 'row-resize', transition: 'background 0.15s' }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#6366f1'; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#232733'; }}
                   />
 
-                  {/* Bottom Panel */}
-                  <Panel defaultSize={28} minSize={1} style={{ overflow: 'hidden' }}>
+                  {/* Bottom Console Panel */}
+                  <Panel defaultSize={25} minSize={5} style={{ overflow: 'hidden', minHeight: 0 }}>
                     <BottomPanel />
                   </Panel>
                 </Group>
               </Panel>
 
               <Separator
-                style={{
-                  width: '5px',
-                  minWidth: '5px',
-                  background: '#232733',
-                  cursor: 'col-resize',
-                  flexShrink: 0,
-                  transition: 'background 0.15s',
-                }}
+                style={{ width: '5px', background: '#232733', cursor: 'col-resize', transition: 'background 0.15s' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#6366f1'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#232733'; }}
               />

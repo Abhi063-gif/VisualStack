@@ -10,6 +10,8 @@ interface LivePreviewPanelProps {
 export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
+  const previewUrl = `${window.location.origin}/preview`;
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
       <div className="bg-[#0e0f12] border border-[#232733] rounded-2xl w-full max-w-6xl h-[88vh] shadow-2xl overflow-hidden flex flex-col box-border">
@@ -20,8 +22,8 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({ isOpen, onCl
               <Icons.PlayCircle size={16} />
             </div>
             <div>
-              <h3 className="text-xs font-bold tracking-wide">Live Application Development Workspace</h3>
-              <p className="text-[10px] text-gray-400 font-mono">http://localhost:3000 (React 19 + Express Server)</p>
+              <h3 className="text-xs font-bold tracking-wide">Live Application Preview Workspace</h3>
+              <p className="text-[10px] text-gray-400 font-mono">{previewUrl} (Rendered Application Viewport)</p>
             </div>
           </div>
 
@@ -35,7 +37,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({ isOpen, onCl
 
         {/* Device Simulator Area */}
         <div className="flex-1 overflow-hidden">
-          <DeviceSimulator initialUrl="http://localhost:3000" />
+          <DeviceSimulator initialUrl={previewUrl} />
         </div>
       </div>
     </div>

@@ -8,7 +8,9 @@ interface DeviceSimulatorProps {
   initialUrl?: string;
 }
 
-export const DeviceSimulator: React.FC<DeviceSimulatorProps> = ({ initialUrl = 'http://localhost:3000' }) => {
+export const DeviceSimulator: React.FC<DeviceSimulatorProps> = ({
+  initialUrl = `${window.location.origin}/preview`,
+}) => {
   const [url, setUrl] = useState(initialUrl);
   const [device, setDevice] = useState<DevicePreset>('desktop');
   const [isLandscape, setIsLandscape] = useState(false);
@@ -189,7 +191,7 @@ export const DeviceSimulator: React.FC<DeviceSimulatorProps> = ({ initialUrl = '
             <iframe
               key={key}
               src={url}
-              title="VisualStack Live Development Preview"
+              title="VisualStack Live Application Preview"
               className="w-full h-full border-none"
             />
           </div>
