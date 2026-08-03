@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Sparkles, Command, ArrowRight, X } from 'lucide-react';
 import { toolCallingEngine } from '../../ai/tools/ToolCallingEngine';
+import { visualDesignAssistant } from '../../ai/services/VisualDesignAssistant';
 
 export interface AICommandItem {
   id: string;
@@ -15,11 +16,12 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
   const [executedToast, setExecutedToast] = useState<string | null>(null);
 
   const commands: AICommandItem[] = [
-    { id: 'cmd_1', title: 'Generate SaaS Landing Page', category: 'ui', action: 'create_landing', description: 'Creates hero section, pricing table, and feature cards' },
-    { id: 'cmd_2', title: 'Build Fullstack Auth Workflow', category: 'backend', action: 'create_auth', description: 'Configures JWT signup, login, and Google OAuth nodes' },
-    { id: 'cmd_3', title: 'Commit & Push Changes to Remote Git', category: 'git', action: 'git_sync', description: 'Stages all uncommitted files and pushes to origin main' },
-    { id: 'cmd_4', title: 'Deploy Project to Vercel Production', category: 'devops', action: 'deploy_vercel', description: 'Runs 1-click cloud deployment pipeline to Vercel' },
-    { id: 'cmd_5', title: 'Build & Run Docker Container', category: 'devops', action: 'docker_run', description: 'Generates multi-stage Dockerfile and starts container' },
+    { id: 'cmd_1', title: 'Generate SaaS Landing Page', category: 'ui', action: 'create_landing', description: 'Creates viewport frame, hero navbar, title, buttons, and feature cards' },
+    { id: 'cmd_2', title: 'Build Fullstack Auth Screen & Workflow', category: 'backend', action: 'create_auth', description: 'Creates login card, heading, email/password inputs, and auth button' },
+    { id: 'cmd_3', title: 'Generate CRM Dashboard Layout', category: 'ui', action: 'create_crm', description: 'Creates sidebar navigation, navbar, and analytics metric cards' },
+    { id: 'cmd_4', title: 'Commit & Push Changes to Remote Git', category: 'git', action: 'git_sync', description: 'Stages all uncommitted files and pushes to origin main' },
+    { id: 'cmd_5', title: 'Deploy Project to Vercel Production', category: 'devops', action: 'deploy_vercel', description: 'Runs 1-click cloud deployment pipeline to Vercel' },
+    { id: 'cmd_6', title: 'Build & Run Docker Container', category: 'devops', action: 'docker_run', description: 'Generates multi-stage Dockerfile and starts container' },
   ];
 
   useEffect(() => {
@@ -39,7 +41,13 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
 
   const handleExecuteCommand = async (cmd: AICommandItem) => {
     let result = '';
-    if (cmd.action === 'git_sync') {
+    if (cmd.action === 'create_landing') {
+      result = visualDesignAssistant.createLandingPage();
+    } else if (cmd.action === 'create_auth') {
+      result = visualDesignAssistant.createLoginScreen();
+    } else if (cmd.action === 'create_crm') {
+      result = visualDesignAssistant.createCRMDashboard();
+    } else if (cmd.action === 'git_sync') {
       result = await toolCallingEngine.executeToolCall('git_commit', { message: 'feat: AI Spotlight Command execute', isAmend: false });
     } else if (cmd.action === 'deploy_vercel') {
       result = await toolCallingEngine.executeToolCall('deploy_app', { provider: 'vercel', environment: 'production' });
@@ -66,7 +74,7 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type an AI command (e.g. Deploy application, Create Auth, Push Git)..."
+            placeholder="Type an AI command (e.g. Create Landing Page, Create Login, Deploy, Push Git)..."
             className="w-full bg-transparent text-sm text-gray-200 placeholder-gray-500 outline-none font-sans"
             autoFocus
           />

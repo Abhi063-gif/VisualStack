@@ -5,6 +5,7 @@ import { aiModelManager } from '../../ai/models/AIModelManager';
 import { aiSecurityFilter } from '../../ai/security/AISecurityFilter';
 import { contextEngine } from '../../ai/core/ContextEngine';
 import { toolCallingEngine } from '../../ai/tools/ToolCallingEngine';
+import { visualDesignAssistant } from '../../ai/services/VisualDesignAssistant';
 
 export interface ChatMessage {
   id: string;
@@ -66,13 +67,21 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     const sanitizedInput = aiSecurityFilter.sanitizePrompt(text);
     const systemContext = contextEngine.getSystemPromptWithContext(sanitizedInput);
 
-    // Simulate real AI tool detection and execution
+    // Real AI tool detection and execution
     let toolResultText = '';
-    if (text.toLowerCase().includes('commit') || text.toLowerCase().includes('push')) {
+    const lowerText = text.toLowerCase();
+
+    if (lowerText.includes('landing page') || lowerText.includes('landing')) {
+      toolResultText = visualDesignAssistant.createLandingPage();
+    } else if (lowerText.includes('login') || lowerText.includes('auth page')) {
+      toolResultText = visualDesignAssistant.createLoginScreen();
+    } else if (lowerText.includes('dashboard') || lowerText.includes('crm')) {
+      toolResultText = visualDesignAssistant.createCRMDashboard();
+    } else if (lowerText.includes('commit') || lowerText.includes('push')) {
       toolResultText = await toolCallingEngine.executeToolCall('git_commit', { message: text, isAmend: false });
-    } else if (text.toLowerCase().includes('deploy')) {
+    } else if (lowerText.includes('deploy')) {
       toolResultText = await toolCallingEngine.executeToolCall('deploy_app', { provider: 'vercel', environment: 'production' });
-    } else if (text.toLowerCase().includes('container') || text.toLowerCase().includes('docker')) {
+    } else if (lowerText.includes('container') || lowerText.includes('docker')) {
       toolResultText = await toolCallingEngine.executeToolCall('build_docker_container', { name: 'visualstack-app', ports: '8080:8080' });
     }
 
@@ -224,8 +233,9 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
       {/* Prompt Suggestions Chips */}
       <div className="px-4 py-2 bg-[#0e0f12] border-t border-[#232733] flex items-center gap-2 overflow-x-auto custom-scrollbar text-[11px]">
         {[
-          'Build Login API',
           'Create Landing Page',
+          'Create Login Page',
+          'Create CRM Dashboard',
           'Deploy to Vercel',
           'Commit Changes to Git',
           'Build Docker Container',
