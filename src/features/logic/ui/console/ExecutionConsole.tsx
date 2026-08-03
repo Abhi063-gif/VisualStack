@@ -5,6 +5,8 @@ import { screenManager } from '../../../../application/screens/ScreenManager';
 import { architectureValidator } from '../../../../application/engines/ArchitectureValidator';
 import { runtimeSimulatorEngine } from '../../../../application/simulator/RuntimeSimulatorEngine';
 import { projectModelExporter } from '../../../../application/ir/ProjectModelExporter';
+import { compiler } from '../../../../compiler/Compiler';
+import type { StageLog } from '../../../../compiler/CompilerLogger';
 
 type BottomTab =
   | 'logs'
@@ -24,9 +26,13 @@ export const ExecutionConsole: React.FC = () => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [simProgress, setSimProgress] = useState(0);
 
+  const [compilerStageLogs, setCompilerStageLogs] = useState<StageLog[]>([]);
+  const [compilerIRJson, setCompilerIRJson] = useState<string>('');
+  const [isCompiling, setIsCompiling] = useState(false);
+
   const activeScreen = screenManager.getActiveScreen();
   const validationIssues = architectureValidator.validateFullProject();
-  const compiledIRJson = projectModelExporter.exportJSONString();
+  const rawIRJson = projectModelExporter.exportJSONString();
 
   // Automatic Step Simulator Timer when isSimulating is active
   useEffect(() => {
@@ -56,205 +62,232 @@ export const ExecutionConsole: React.FC = () => {
     }
   };
 
+  const handleRunCompilerPipeline = async () => {
+    setIsCompiling(true);
+    const { context } = await compiler.compile({ targetFramework: 'react-express' });
+    setCompilerStageLogs(context.logger.getLogs());
+    if (context.ir) {
+      setCompilerIRJson(JSON.stringify(context.ir, null, 2));
+    }
+    setIsCompiling(false);
+  };
+
   const filteredLogs =
     filterLevel === 'all' ? executionLogs : executionLogs.filter((log) => log.level === filterLevel);
 
-  const errors = [
-    ...executionLogs.filter((l) => l.level === 'error').map((l) => ({ id: l.id, message: l.message })),
-    ...validationIssues.filter((i) => i.type === 'error').map((i) => ({ id: i.id, message: i.message })),
-  ];
-
-  const warnings = [
-    ...executionLogs.filter((l) => l.level === 'warn').map((l) => ({ id: l.id, message: l.message })),
-    ...validationIssues.filter((i) => i.type === 'warning').map((i) => ({ id: i.message, message: i.message })),
-  ];
+  const errors = validationIssues.filter((i: any) => i.severity === 'error' || i.type === 'error');
+  const warnings = validationIssues.filter((i: any) => i.severity === 'warning' || i.type === 'warning');
 
   return (
-    <div className="w-full h-full bg-[#0c0d12] border-t border-[#232733] flex flex-col select-none overflow-hidden box-border">
-      {/* 8-Tab Header Bar */}
-      <div className="h-9 px-3 bg-[#11131c] border-b border-[#232733] flex items-center justify-between shrink-0 box-border overflow-x-auto custom-scrollbar">
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-1 shrink-0">
+    <div className="h-full bg-[#0c0d12] border-t border-[#232733] flex flex-col font-sans select-none text-xs text-gray-300 overflow-hidden box-border">
+      {/* Header Bar */}
+      <div className="bg-[#14161d] border-b border-[#232733] px-3 py-1.5 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
           <button
             onClick={() => setActiveTab('logs')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'logs' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'logs'
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.Terminal size={12} className="text-indigo-400" />
+            <Icons.Terminal size={13} />
             <span>Execution Logs</span>
-            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#0e0f12] text-gray-400 border border-[#232733]">
+            <span className="bg-gray-800 text-gray-300 px-1.5 py-0.2 rounded text-[10px]">
               {executionLogs.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('simulator')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'simulator' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'simulator'
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.PlayCircle size={12} className="text-purple-400" />
-            <span>Runtime Simulator</span>
+            <Icons.PlayCircle size={13} />
+            <span>Step Simulator</span>
+            <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 px-1.5 py-0.2 rounded text-[10px]">
+              {executionSteps.length} Steps
+            </span>
           </button>
 
           <button
             onClick={() => setActiveTab('variables')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'variables' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'variables'
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.Box size={12} className="text-emerald-400" />
-            <span>Variables</span>
-            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#0e0f12] text-gray-400 border border-[#232733]">
-              {variables.length + (activeScreen?.variables.length || 0)}
+            <Icons.Variable size={13} />
+            <span>Live Variables</span>
+            <span className="bg-gray-800 text-gray-300 px-1.5 py-0.2 rounded text-[10px]">
+              {(activeScreen?.variables.length || 0) + variables.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('apis')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'apis' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'apis'
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.Globe size={12} className="text-orange-400" />
+            <Icons.Globe size={13} />
             <span>Generated APIs</span>
           </button>
 
           <button
             onClick={() => setActiveTab('db_queries')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'db_queries' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'db_queries'
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.Database size={12} className="text-cyan-400" />
+            <Icons.Database size={13} />
             <span>DB Queries</span>
           </button>
 
           <button
             onClick={() => setActiveTab('compiler')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'compiler' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'compiler'
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.Cpu size={12} className="text-blue-400" />
+            <Icons.Code2 size={13} />
             <span>Compiler IR</span>
           </button>
 
           <button
             onClick={() => setActiveTab('problems')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'problems' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'problems'
+                ? 'bg-red-950/40 text-red-400 border border-red-800/40'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.AlertCircle size={12} className="text-red-400" />
+            <Icons.AlertCircle size={13} className={errors.length > 0 ? 'text-red-400' : ''} />
             <span>Problems</span>
-            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-red-950/60 text-red-300 border border-red-800/40">
-              {errors.length}
-            </span>
+            {errors.length > 0 && (
+              <span className="bg-red-600 text-white font-bold px-1.5 py-0.2 rounded text-[10px]">
+                {errors.length}
+              </span>
+            )}
           </button>
 
           <button
             onClick={() => setActiveTab('warnings')}
-            className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              activeTab === 'warnings' ? 'bg-[#181a26] text-white font-semibold border border-[#232733]' : 'text-gray-400 hover:text-gray-200'
+            className={`px-2.5 py-1 rounded font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              activeTab === 'warnings'
+                ? 'bg-amber-950/40 text-amber-400 border border-amber-800/40'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#181a20]'
             }`}
           >
-            <Icons.AlertTriangle size={12} className="text-amber-400" />
+            <Icons.AlertTriangle size={13} className={warnings.length > 0 ? 'text-amber-400' : ''} />
             <span>Warnings</span>
-            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40">
-              {warnings.length}
-            </span>
+            {warnings.length > 0 && (
+              <span className="bg-amber-600 text-white font-bold px-1.5 py-0.2 rounded text-[10px]">
+                {warnings.length}
+              </span>
+            )}
           </button>
         </div>
 
-        {/* Console Level Filters & Actions */}
-        {activeTab === 'logs' && (
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1 text-[10px]">
-              {(['all', 'info', 'warn', 'error'] as const).map((lvl) => (
-                <button
-                  key={lvl}
-                  onClick={() => setFilterLevel(lvl)}
-                  className={`px-2 py-0.5 rounded capitalize transition-colors cursor-pointer ${
-                    filterLevel === lvl ? 'bg-indigo-600 text-white font-medium' : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  {lvl}
-                </button>
-              ))}
-            </div>
+        {/* Console Controls */}
+        <div className="flex items-center gap-2">
+          {activeTab === 'logs' && (
+            <>
+              <select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value as any)}
+                className="bg-[#181a20] border border-[#232733] rounded px-2 py-0.5 text-[11px] text-gray-300 outline-none"
+              >
+                <option value="all">All Logs</option>
+                <option value="info">Info</option>
+                <option value="warn">Warn</option>
+                <option value="error">Error</option>
+              </select>
 
-            <button
-              onClick={clearLogs}
-              className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#181a20] transition-colors cursor-pointer"
-              title="Clear Logs"
-            >
-              <Icons.Trash2 size={13} />
-            </button>
-          </div>
-        )}
+              <button
+                onClick={clearLogs}
+                className="p-1 text-gray-400 hover:text-white rounded hover:bg-[#181a20] transition-colors cursor-pointer"
+                title="Clear Logs"
+              >
+                <Icons.Trash2 size={13} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Tab Content Panes */}
-      <div className="flex-1 overflow-y-auto p-3 font-mono text-[11px] custom-scrollbar box-border">
+      {/* Main Console Viewport */}
+      <div className="flex-1 p-3 overflow-auto custom-scrollbar font-mono text-[11px]">
         {/* 1. Execution Logs */}
         {activeTab === 'logs' && (
-          <div className="space-y-1.5">
-            {filteredLogs.map((log) => {
-              const isError = log.level === 'error';
-              const isWarn = log.level === 'warn';
-
-              return (
+          <div className="space-y-1">
+            {filteredLogs.length === 0 ? (
+              <div className="text-gray-400 italic py-4 text-center">
+                No logs recorded. Run a logic workflow to view real-time node outputs.
+              </div>
+            ) : (
+              filteredLogs.map((log: any) => (
                 <div
                   key={log.id}
-                  className={`flex items-start gap-2.5 leading-relaxed border-l-2 pl-2.5 py-0.5 rounded-r ${
-                    isError
-                      ? 'border-red-500 text-red-300 bg-red-950/20'
-                      : isWarn
-                      ? 'border-amber-500 text-amber-300 bg-amber-950/20'
-                      : 'border-[#232733] text-gray-300'
-                  }`}
+                  className="flex items-start gap-2.5 py-0.5 hover:bg-[#14161d] px-1 rounded transition-colors"
                 >
-                  <span className="text-[10px] text-gray-500 shrink-0 font-mono">
-                    {new Date(log.timestamp).toLocaleTimeString()}
+                  <span className="text-gray-400 text-[10px] shrink-0 pt-0.5 font-sans">{log.timestamp}</span>
+                  <span
+                    className={`font-semibold shrink-0 uppercase text-[10px] px-1.5 py-0.2 rounded font-sans ${
+                      log.level === 'error'
+                        ? 'bg-red-950 text-red-400 border border-red-800/50'
+                        : log.level === 'warn'
+                        ? 'bg-amber-950 text-amber-400 border border-amber-800/50'
+                        : 'bg-indigo-950 text-indigo-400 border border-indigo-800/50'
+                    }`}
+                  >
+                    {log.level}
                   </span>
-                  <span className="break-all">{log.message}</span>
+                  {log.nodeLabel && <span className="text-indigo-300 font-semibold shrink-0">[{log.nodeLabel}]</span>}
+                  <span className="text-gray-200 break-all">{log.message}</span>
                 </div>
-              );
-            })}
-
-            {filteredLogs.length === 0 && (
-              <div className="text-gray-500 italic py-6 text-center">
-                Console stream is empty. Click "Run Logic" in toolbar to trigger execution.
-              </div>
+              ))
             )}
           </div>
         )}
 
-        {/* 2. Runtime Simulator (Phase 6 Interactive Engine) */}
+        {/* 2. Step Simulator */}
         {activeTab === 'simulator' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2.5 bg-[#14161d] border border-[#232733] rounded-lg">
+            <div className="bg-[#14161d] border border-[#232733] rounded-lg p-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleStartSimulation}
-                  className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors ${
-                    isSimulating ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white'
+                  className={`px-3 py-1.5 rounded font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer ${
+                    isSimulating
+                      ? 'bg-red-600 hover:bg-red-500 text-white'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                   }`}
                 >
                   {isSimulating ? <Icons.Pause size={14} /> : <Icons.Play size={14} />}
-                  <span>{isSimulating ? 'Pause Step Simulation' : 'Start Runtime Simulation'}</span>
+                  <span>{isSimulating ? 'Pause Simulation' : 'Start Simulation'}</span>
                 </button>
 
-                <div className="flex items-center gap-1 text-[10px] font-sans text-gray-400">
-                  <span>Speed:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-400">Speed:</span>
                   {(['1x', '2x', '5x'] as const).map((spd) => (
                     <button
                       key={spd}
                       onClick={() => setSimSpeed(spd)}
-                      className={`px-2 py-0.5 rounded font-mono cursor-pointer ${
-                        simSpeed === spd ? 'bg-indigo-600 text-white font-bold' : 'bg-[#181a20] text-gray-400 hover:text-white'
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors cursor-pointer ${
+                        simSpeed === spd
+                          ? 'bg-indigo-600 text-white font-bold'
+                          : 'bg-[#181a20] text-gray-400 hover:text-white'
                       }`}
                     >
                       {spd}
@@ -263,37 +296,32 @@ export const ExecutionConsole: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="text-right text-[10px] text-gray-400 font-mono">
-                  <span>Simulation Progress: </span>
-                  <strong className="text-purple-300 font-semibold">{simProgress}%</strong>
-                </div>
-
-                <div className="w-24 bg-[#181a20] h-2 rounded-full overflow-hidden border border-[#232733]">
-                  <div className="bg-purple-500 h-full transition-all duration-300" style={{ width: `${simProgress}%` }} />
-                </div>
+              <div className="w-48 bg-gray-900 border border-[#232733] h-2.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-indigo-500 h-full transition-all duration-300"
+                  style={{ width: `${simProgress}%` }}
+                />
               </div>
             </div>
 
-            {/* Active Execution Steps List */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold uppercase text-purple-400 pb-1 tracking-wider">
-                Simulated Execution Stack Timeline ({executionSteps.length} Steps)
-              </div>
-
               {executionSteps.length === 0 ? (
-                <div className="text-gray-500 italic py-6 text-center bg-[#14161d] rounded border border-[#232733]">
-                  No step simulation active. Click "Start Runtime Simulation" above to execute graph step-by-step.
+                <div className="text-gray-400 italic py-4 text-center">
+                  No simulation steps executed yet. Click "Start Simulation" above.
                 </div>
               ) : (
-                executionSteps.map((step) => (
-                  <div key={step.id} className="flex items-center justify-between p-2 bg-[#14161d] border border-[#232733] rounded">
-                    <div className="flex items-center gap-2 truncate pr-2">
-                      <span className="text-purple-400 font-mono font-bold">#{step.stepIndex}</span>
-                      <span className="text-white font-medium truncate">{step.nodeName}</span>
-                      <span className="text-[9px] font-mono text-gray-500">({step.category})</span>
+                executionSteps.map((step: any, idx: number) => (
+                  <div
+                    key={step.id || idx}
+                    className="p-2 bg-[#14161d] border border-[#232733] rounded flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-400 font-bold text-[10px] flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <span className="text-gray-200 font-semibold">{step.nodeType || step.name || 'Step'}</span>
                     </div>
-                    <span className="text-emerald-400 font-semibold text-[10px] shrink-0">{step.status}</span>
+                    <span className="text-gray-400 text-[10px]">{step.durationMs || 10}ms</span>
                   </div>
                 ))
               )}
@@ -301,22 +329,19 @@ export const ExecutionConsole: React.FC = () => {
           </div>
         )}
 
-        {/* 3. Variables */}
+        {/* 3. Live Variables */}
         {activeTab === 'variables' && (
           <div className="space-y-2">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider pb-1">
-              Screen & Global Scope Variables
-            </div>
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#232733] text-gray-500 text-[10px]">
-                  <th className="py-1">Name</th>
-                  <th className="py-1">Scope</th>
-                  <th className="py-1">Type</th>
-                  <th className="py-1">Value</th>
+                <tr className="border-b border-[#232733] text-gray-400 font-sans text-[10px] uppercase">
+                  <th className="pb-1 font-semibold">Variable Name</th>
+                  <th className="pb-1 font-semibold">Scope</th>
+                  <th className="pb-1 font-semibold">Data Type</th>
+                  <th className="pb-1 font-semibold">Current Value</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#181a20] text-[11px]">
+              <tbody className="divide-y divide-[#232733]/50">
                 {activeScreen?.variables.map((v) => (
                   <tr key={v.id} className="hover:bg-[#14161d]">
                     <td className="py-1.5 font-mono text-indigo-400 font-semibold">{v.name}</td>
@@ -344,20 +369,14 @@ export const ExecutionConsole: React.FC = () => {
             <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider pb-1">
               Screen REST & Webhook API Endpoints
             </div>
-            <div className="space-y-1.5">
-              <div className="p-2 bg-[#14161d] border border-[#232733] rounded flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold text-[9px]">POST</span>
-                  <span className="font-mono text-white">/api/v1/auth/login</span>
-                </div>
-                <span className="text-[10px] text-gray-400">Auth: Public</span>
-              </div>
-              <div className="p-2 bg-[#14161d] border border-[#232733] rounded flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 font-bold text-[9px]">GET</span>
-                  <span className="font-mono text-white">/api/v1/users/me</span>
-                </div>
-                <span className="text-[10px] text-gray-400">Auth: Bearer JWT</span>
+            <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-bold text-[10px]">
+                  POST
+                </span>
+                <code className="text-gray-200">
+                  /api/v1{activeScreen?.route.path === '/' ? '/main' : activeScreen?.route.path}
+                </code>
               </div>
             </div>
           </div>
@@ -375,17 +394,47 @@ export const ExecutionConsole: React.FC = () => {
           </div>
         )}
 
-        {/* 6. Compiler IR (Phase 6 Live JSON Model Viewer) */}
+        {/* 6. Compiler IR */}
         {activeTab === 'compiler' && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400 uppercase tracking-wider pb-1">
-              <span>Intermediate Representation (IR) Compiler Output</span>
-              <span className="text-indigo-400 font-mono">Full Application Model JSON</span>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between bg-[#14161d] border border-[#232733] rounded-lg p-2.5">
+              <div className="flex items-center gap-2">
+                <Icons.Cpu size={16} className="text-indigo-400" />
+                <span className="font-semibold text-white">VisualStack 7-Stage Compiler Pipeline</span>
+              </div>
+
+              <button
+                onClick={handleRunCompilerPipeline}
+                disabled={isCompiling}
+                className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer shadow"
+              >
+                <Icons.Play size={13} />
+                <span>{isCompiling ? 'Compiling Pipeline...' : 'Run 7-Stage Compiler Pipeline'}</span>
+              </button>
             </div>
 
-            <div className="bg-[#14161d] border border-[#232733] rounded-lg p-3 overflow-auto max-h-[300px] custom-scrollbar">
+            {compilerStageLogs.length > 0 && (
+              <div className="bg-[#14161d] border border-[#232733] rounded-lg p-3 space-y-1.5">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                  Pipeline Execution Stage Timings
+                </div>
+                {compilerStageLogs.map((log) => (
+                  <div key={log.stage} className="flex items-center justify-between text-[11px] font-mono py-0.5">
+                    <span className="text-indigo-400 font-semibold">{log.stage}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-300">{log.message}</span>
+                      <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 px-1.5 py-0.2 rounded text-[10px]">
+                        {log.durationMs}ms
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-[#14161d] border border-[#232733] rounded-lg p-3 overflow-auto max-h-[250px] custom-scrollbar">
               <pre className="font-mono text-[11px] text-indigo-300 leading-relaxed whitespace-pre-wrap">
-                {compiledIRJson}
+                {compilerIRJson || rawIRJson}
               </pre>
             </div>
           </div>
@@ -399,8 +448,8 @@ export const ExecutionConsole: React.FC = () => {
                 ✓ No critical architecture problems detected.
               </div>
             ) : (
-              errors.map((e) => (
-                <div key={e.id} className="p-2 bg-red-950/30 border border-red-900/50 rounded text-red-300 flex items-center gap-2">
+              errors.map((e: any, idx: number) => (
+                <div key={e.id || idx} className="p-2 bg-red-950/30 border border-red-900/50 rounded text-red-300 flex items-center gap-2">
                   <Icons.AlertCircle size={13} className="text-red-400 shrink-0" />
                   <span>{e.message}</span>
                 </div>
@@ -415,8 +464,8 @@ export const ExecutionConsole: React.FC = () => {
             {warnings.length === 0 ? (
               <div className="text-gray-400 italic py-3 text-center">No non-critical warnings reported.</div>
             ) : (
-              warnings.map((w) => (
-                <div key={w.id} className="p-2 bg-amber-950/30 border border-amber-900/50 rounded text-amber-300 flex items-center gap-2">
+              warnings.map((w: any, idx: number) => (
+                <div key={w.id || idx} className="p-2 bg-amber-950/30 border border-amber-900/50 rounded text-amber-300 flex items-center gap-2">
                   <Icons.AlertTriangle size={13} className="text-amber-400 shrink-0" />
                   <span>{w.message}</span>
                 </div>
