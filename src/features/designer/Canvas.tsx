@@ -12,6 +12,7 @@ import { commandManager } from '../../core/commands/CommandManager';
 import { DeleteNodeCommand, DuplicateNodeCommand, UpdateNodePropertyCommand } from './commands/NodeCommands';
 import { ArrangeCommand } from './commands/ArrangeCommands';
 import { LockCommand, VisibilityCommand } from './commands/VisibilityCommands';
+import { initDefaultCanvasState } from './scenegraph/DefaultSceneInitializer';
 
 function generateId(): string {
   return `node_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -169,6 +170,9 @@ export const Canvas: React.FC = () => {
     const container = containerRef.current;
     if (!container) return;
 
+    // Ensure default canvas artboard frame exists
+    initDefaultCanvasState();
+
     // Build engine + interaction manager
     const engine = new CanvasEngine();
     engine.initialize(container);
@@ -176,6 +180,20 @@ export const Canvas: React.FC = () => {
 
     const manager = new DesignerInteractionManager(engine);
     const detach = manager.attach(container);
+
+    // Initial sizing check
+    const width = container.offsetWidth || window.innerWidth || 1200;
+    const height = container.offsetHeight || window.innerHeight || 800;
+    engine.resize(width, height);
+    engine.render();
+
+    // Secondary render tick after layout stabilizes
+    const timer = setTimeout(() => {
+      if (engineRef.current && container) {
+        engineRef.current.resize(container.offsetWidth || width, container.offsetHeight || height);
+        engineRef.current.render();
+      }
+    }, 100);
 
     // Re-render on viewport and selection changes
     const unsubs = [
@@ -209,6 +227,7 @@ export const Canvas: React.FC = () => {
     resizeObserver.observe(container);
 
     return () => {
+      clearTimeout(timer);
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       unsubs.forEach(unsub => unsub());
@@ -219,7 +238,7 @@ export const Canvas: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full h-full bg-[#0e0f12] overflow-hidden relative select-none">
+    <div className="w-full h-full bg-[#090a0f] overflow-hidden relative select-none">
       {/* Konva Stage container */}
       <div ref={containerRef} tabIndex={0} className="w-full h-full outline-none" />
 
