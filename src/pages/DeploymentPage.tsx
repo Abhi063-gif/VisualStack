@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Rocket, ShieldCheck, Globe, RotateCcw, Server, Activity, RefreshCw, Lock, Cpu, Box, Code, Plus, Trash2 } from 'lucide-react';
+import { Rocket, ShieldCheck, Globe, RotateCcw, Server, Activity, RefreshCw, Lock, Cpu, Box, Code, Plus, Trash2, Key, Download, CheckCircle2, AlertCircle } from 'lucide-react';
 import { deploymentCenter } from '../deployment/DeploymentCenter';
 import { providerRegistry } from '../deployment/providers/ProviderRegistry';
-import { secretsVault } from '../deployment/security/SecretsVault';
+import { secretsVault, type SecretCategory } from '../deployment/security/SecretsVault';
 import { domainManager } from '../deployment/domain/DomainManager';
+import { sslManager } from '../deployment/domain/SSLManager';
 import { dockerManager } from '../deployment/docker/DockerManager';
 import { VisualGitPanel } from '../components/deployment/VisualGitPanel';
 import { VisualPipeline } from '../components/deployment/VisualPipeline';
@@ -25,9 +26,11 @@ export const DeploymentPage: React.FC = () => {
   const [containerPort, setContainerPort] = useState('8080');
 
   // Secrets State
-  const [secrets, setSecrets] = useState(secretsVault.getSecrets());
+  const [secretsEnv, setSecretsEnv] = useState<'development' | 'testing' | 'staging' | 'production' | 'preview'>('production');
+  const [secrets, setSecrets] = useState(secretsVault.getSecrets(secretsEnv));
   const [newSecretKey, setNewSecretKey] = useState('');
   const [newSecretValue, setNewSecretValue] = useState('');
+  const [newSecretCategory, setNewSecretCategory] = useState<SecretCategory>('api_key');
 
   // Domain State
   const [domains, setDomains] = useState(domainManager.getDomains());
@@ -59,17 +62,38 @@ export const DeploymentPage: React.FC = () => {
 
   const handleAddSecret = () => {
     if (!newSecretKey.trim() || !newSecretValue.trim()) return;
-    secretsVault.setSecret(newSecretKey, newSecretValue, 'api_key');
-    setSecrets(secretsVault.getSecrets());
+    secretsVault.setSecret(newSecretKey, newSecretValue, newSecretCategory, secretsEnv);
+    setSecrets(secretsVault.getSecrets(secretsEnv));
     setNewSecretKey('');
     setNewSecretValue('');
   };
 
+  const handleDeleteSecret = (key: string) => {
+    secretsVault.deleteSecret(key);
+    setSecrets(secretsVault.getSecrets(secretsEnv));
+  };
+
+  const handleExportVault = () => {
+    const json = secretsVault.exportVaultJson();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `secrets_vault_${Date.now()}.json`;
+    a.click();
+  };
+
   const handleAddDomain = () => {
     if (!newDomainInput.trim()) return;
-    domainManager.addDomain(newDomainInput);
+    domainManager.addDomain(newDomainInput, selectedEnv);
+    sslManager.registerCertificate(newDomainInput);
     setDomains(domainManager.getDomains());
     setNewDomainInput('');
+  };
+
+  const handleVerifyDomain = (id: string) => {
+    domainManager.verifyDomain(id);
+    setDomains(domainManager.getDomains());
   };
 
   return (
@@ -223,41 +247,87 @@ export const DeploymentPage: React.FC = () => {
 
         {activeTab === 'secrets' && (
           <div className="bg-[#14161b] border border-[#232733] rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
-              <Lock size={16} className="text-indigo-400" /> Secrets Vault & Environment Variables
-            </h2>
+            <div className="flex items-center justify-between border-b border-[#232733] pb-3">
+              <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                <Lock size={16} className="text-indigo-400" /> Encrypted Secrets Vault & Environment Manager
+              </h2>
+
+              <div className="flex items-center gap-3">
+                <select
+                  value={secretsEnv}
+                  onChange={(e) => {
+                    const env = e.target.value as any;
+                    setSecretsEnv(env);
+                    setSecrets(secretsVault.getSecrets(env));
+                  }}
+                  className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1 text-xs text-indigo-400 font-semibold outline-none"
+                >
+                  <option value="production">Production</option>
+                  <option value="staging">Staging</option>
+                  <option value="development">Development</option>
+                  <option value="testing">Testing</option>
+                  <option value="preview">Preview</option>
+                </select>
+
+                <button onClick={handleExportVault} className="px-2.5 py-1 bg-[#1f232d] hover:bg-indigo-600/30 text-indigo-400 rounded text-xs transition-colors flex items-center gap-1">
+                  <Download size={12} /> Export Vault JSON
+                </button>
+              </div>
+            </div>
 
             {/* Secret Add Form */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="text"
                 value={newSecretKey}
                 onChange={(e) => setNewSecretKey(e.target.value.toUpperCase())}
-                placeholder="KEY_NAME"
+                placeholder="KEY_NAME (e.g. STRIPE_API_KEY)"
                 className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-200 outline-none font-mono"
               />
               <input
                 type="password"
                 value={newSecretValue}
                 onChange={(e) => setNewSecretValue(e.target.value)}
-                placeholder="Secret Value"
+                placeholder="Secret Value (Local Encryption)"
                 className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-200 outline-none font-mono flex-1"
               />
-              <button onClick={handleAddSecret} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1">
-                <Plus size={14} /> Add Secret
+              <select
+                value={newSecretCategory}
+                onChange={(e) => setNewSecretCategory(e.target.value as SecretCategory)}
+                className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-300 outline-none"
+              >
+                <option value="api_key">API Key</option>
+                <option value="db_pass">Database Password</option>
+                <option value="jwt_secret">JWT Secret</option>
+                <option value="token">Auth Token</option>
+                <option value="ssh_key">SSH Key</option>
+                <option value="certificate">SSL Certificate</option>
+              </select>
+
+              <button onClick={handleAddSecret} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1">
+                <Plus size={14} /> Encrypt & Save
               </button>
             </div>
 
             {/* Secret List */}
             {secrets.length === 0 ? (
-              <div className="text-xs text-gray-500 py-6 text-center">No secrets stored in vault. Use the form above to add API keys or environment secrets.</div>
+              <div className="text-xs text-gray-500 py-6 text-center">No secrets stored in [{secretsEnv}] vault. Use the form above to encrypt and save API keys or database passwords.</div>
             ) : (
               <div className="space-y-2">
                 {secrets.map((sec) => (
                   <div key={sec.key} className="flex items-center justify-between bg-[#0e0f12] p-3 rounded border border-[#232733] text-xs font-mono">
-                    <span className="text-indigo-400 font-semibold">{sec.key}</span>
-                    <span className="text-gray-400">{sec.maskedValue}</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-gray-800 text-gray-400 rounded uppercase">{sec.category}</span>
+                    <div className="flex items-center gap-3">
+                      <Key size={14} className="text-indigo-400" />
+                      <span className="text-indigo-400 font-semibold">{sec.key}</span>
+                      <span className="text-gray-400">{sec.maskedValue}</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] px-2 py-0.5 bg-gray-800 text-gray-400 rounded uppercase">{sec.category}</span>
+                      <button onClick={() => handleDeleteSecret(sec.key)} className="p-1 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 rounded">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -381,7 +451,7 @@ export const DeploymentPage: React.FC = () => {
                 placeholder="e.g. app.mycompany.com"
                 className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-200 outline-none flex-1 font-mono"
               />
-              <button onClick={handleAddDomain} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1">
+              <button onClick={handleAddDomain} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1">
                 <Plus size={14} /> Add Domain
               </button>
             </div>
@@ -390,11 +460,39 @@ export const DeploymentPage: React.FC = () => {
             {domains.length === 0 ? (
               <div className="text-xs text-gray-500 py-6 text-center">No custom domains configured. Add your domain above to generate DNS records and SSL certificates.</div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {domains.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between bg-[#0e0f12] p-3 rounded border border-[#232733] text-xs">
-                    <span className="font-mono text-indigo-400 font-bold">{d.domain}</span>
-                    <span className="text-emerald-400 font-medium">SSL Active • DNS Verified</span>
+                  <div key={d.id} className="bg-[#0e0f12] p-4 rounded-lg border border-[#232733] space-y-3 text-xs">
+                    <div className="flex items-center justify-between border-b border-[#232733] pb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-indigo-400 font-bold text-sm">{d.domain}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1 ${
+                          d.verified ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                        }`}>
+                          {d.verified ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                          {d.verified ? 'SSL Active • DNS Verified' : 'DNS Pending Verification'}
+                        </span>
+                      </div>
+
+                      {!d.verified && (
+                        <button onClick={() => handleVerifyDomain(d.id)} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold">
+                          Verify DNS Records
+                        </button>
+                      )}
+                    </div>
+
+                    {/* DNS Records Table */}
+                    <div className="space-y-1">
+                      <div className="text-[10px] text-gray-500 font-semibold uppercase">Required DNS Records:</div>
+                      {d.dnsRecords.map((r, i) => (
+                        <div key={i} className="flex items-center justify-between bg-[#14161b] px-3 py-1.5 rounded font-mono text-[11px] border border-[#232733]">
+                          <span className="text-amber-400 font-bold w-16">{r.type}</span>
+                          <span className="text-gray-300 w-32 truncate">{r.name}</span>
+                          <span className="text-gray-400 flex-1 truncate">{r.value}</span>
+                          <span className={`text-[10px] uppercase ${r.status === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`}>{r.status}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
