@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
-import { Rocket, ShieldCheck, Globe, RotateCcw, Server, Activity, RefreshCw, Lock, Cpu, Box, Code, Plus, Trash2, Key, Download, CheckCircle2, AlertCircle, Copy, Check, Terminal } from 'lucide-react';
+import { Rocket, ShieldCheck, Globe, RotateCcw, Server, Activity, RefreshCw, Lock, Cpu, Box, Code, Plus, Trash2, Key, Download, CheckCircle2, AlertCircle, Copy, Check, Terminal, FileText, Bell } from 'lucide-react';
 import { deploymentCenter } from '../deployment/DeploymentCenter';
 import { providerRegistry } from '../deployment/providers/ProviderRegistry';
 import { secretsVault, type SecretCategory } from '../deployment/security/SecretsVault';
 import { domainManager } from '../deployment/domain/DomainManager';
 import { sslManager } from '../deployment/domain/SSLManager';
 import { dockerManager } from '../deployment/docker/DockerManager';
+import { healthChecker } from '../deployment/health/HealthChecker';
+import { notificationManager } from '../deployment/notification/NotificationManager';
+import { docGenerator } from '../deployment/documentation/DocGenerator';
 import { VisualGitPanel } from '../components/deployment/VisualGitPanel';
 import { VisualPipeline } from '../components/deployment/VisualPipeline';
 import { rollbackEngine } from '../deployment/health/RollbackEngine';
 import type { SupportedFramework } from '../deployment/build/BuildEngine';
 
 export const DeploymentPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'git' | 'pipeline' | 'secrets' | 'docker' | 'domains'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'git' | 'pipeline' | 'secrets' | 'docker' | 'domains' | 'health' | 'releases'>('overview');
   const [selectedProvider, setSelectedProvider] = useState('vercel');
   const [selectedEnv, setSelectedEnv] = useState<'development' | 'testing' | 'staging' | 'production' | 'preview'>('production');
   const [history, setHistory] = useState(deploymentCenter.getDeploymentHistory());
@@ -38,11 +41,23 @@ export const DeploymentPage: React.FC = () => {
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [verifyingDomainId, setVerifyingDomainId] = useState<string | null>(null);
 
+  // Health State
+  const [pingUrlInput, setPingUrlInput] = useState('https://app.visualstack.io');
+  const [healthLogs, setHealthLogs] = useState(healthChecker.getHistory());
+  const [isPinging, setIsPinging] = useState(false);
+
+  // Release & Notification State
+  const [rules, setRules] = useState(notificationManager.getRules());
+  const [notifyUrl, setNotifyUrl] = useState('');
+  const [notifyChannel, setNotifyChannel] = useState<'slack' | 'discord' | 'pagerduty' | 'webhook'>('slack');
+  const [showChangelogModal, setShowChangelogModal] = useState(false);
+
   const providers = providerRegistry.getAll();
 
   const handleDeployNow = async () => {
     setIsDeploying(true);
     await deploymentCenter.createDeployment('visualstack-app', selectedProvider, selectedEnv);
+    notificationManager.dispatchNotification('deployment.success', `Successfully deployed visualstack-app to ${selectedProvider} (${selectedEnv}).`);
     setTimeout(() => {
       setHistory(deploymentCenter.getDeploymentHistory());
       setAnalytics(deploymentCenter.getAnalytics());
@@ -52,6 +67,7 @@ export const DeploymentPage: React.FC = () => {
 
   const handleRollback = async (id: string) => {
     await rollbackEngine.rollbackTo(id);
+    notificationManager.dispatchNotification('rollback.triggered', `Triggered rollback to deployment ${id}.`);
     setHistory(deploymentCenter.getDeploymentHistory());
   };
 
@@ -100,6 +116,21 @@ export const DeploymentPage: React.FC = () => {
     setVerifyingDomainId(null);
   };
 
+  const handlePingHealth = async () => {
+    if (!pingUrlInput.trim()) return;
+    setIsPinging(true);
+    await healthChecker.pingEndpoint(pingUrlInput);
+    setHealthLogs(healthChecker.getHistory());
+    setIsPinging(false);
+  };
+
+  const handleAddRule = () => {
+    if (!notifyUrl.trim()) return;
+    notificationManager.addRule(notifyChannel, notifyUrl, ['deployment.success', 'deployment.failed', 'rollback.triggered']);
+    setRules(notificationManager.getRules());
+    setNotifyUrl('');
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedText(text);
@@ -122,7 +153,7 @@ export const DeploymentPage: React.FC = () => {
 
         {/* Tab Switcher */}
         <div className="flex items-center gap-1 bg-[#0e0f12] p-1 border border-[#232733] rounded-lg">
-          {(['overview', 'pipeline', 'git', 'secrets', 'docker', 'domains'] as const).map((tab) => (
+          {(['overview', 'pipeline', 'git', 'secrets', 'docker', 'domains', 'health', 'releases'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -511,7 +542,7 @@ export const DeploymentPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* DNS Records Table with Copy Action */}
+                    {/* DNS Records Table */}
                     <div className="space-y-1.5">
                       <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Required DNS Provider Records:</div>
                       {d.dnsRecords.map((r, i) => (
@@ -562,7 +593,138 @@ export const DeploymentPage: React.FC = () => {
             )}
           </div>
         )}
+
+        {activeTab === 'health' && (
+          <div className="space-y-6">
+            {/* Health Checker Control */}
+            <div className="bg-[#14161b] border border-[#232733] rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                <Activity size={16} className="text-emerald-400" /> Real-time Production Health Check & Uptime Pinger
+              </h2>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={pingUrlInput}
+                  onChange={(e) => setPingUrlInput(e.target.value)}
+                  placeholder="https://app.visualstack.io/health"
+                  className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-200 outline-none flex-1 font-mono"
+                />
+                <button
+                  onClick={handlePingHealth}
+                  disabled={isPinging}
+                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-1.5 transition-colors"
+                >
+                  {isPinging ? <RefreshCw className="animate-spin" size={14} /> : <Activity size={14} />}
+                  {isPinging ? 'Pinging Endpoint...' : 'Ping Production Endpoint'}
+                </button>
+              </div>
+
+              {/* Health Logs Table */}
+              <div className="space-y-2 pt-2 border-t border-[#232733]">
+                <div className="text-xs font-semibold text-gray-400 uppercase">Recent Ping Diagnostics:</div>
+                {healthLogs.length === 0 ? (
+                  <div className="text-xs text-gray-500 py-6 text-center">No endpoint ping tests performed yet. Click "Ping Production Endpoint" to test uptime.</div>
+                ) : (
+                  healthLogs.map((h, i) => (
+                    <div key={i} className="flex items-center justify-between bg-[#0e0f12] px-3 py-2 rounded font-mono text-xs border border-[#232733]">
+                      <div className="flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span className="text-indigo-400 font-bold">{h.endpoint}</span>
+                        <span className="text-emerald-400">HTTP {h.statusCode} OK</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-gray-400 text-[11px]">
+                        <span>Latency: {h.responseTimeMs}ms</span>
+                        <span>Uptime: {h.uptimePct}%</span>
+                        <span>{new Date(h.checkedAt).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Notification Rules Dispatcher */}
+            <div className="bg-[#14161b] border border-[#232733] rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                <Bell size={16} className="text-indigo-400" /> Multi-Channel DevOps Notification Dispatcher
+              </h2>
+
+              <div className="flex items-center gap-3">
+                <select
+                  value={notifyChannel}
+                  onChange={(e) => setNotifyChannel(e.target.value as any)}
+                  className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-indigo-400 font-semibold outline-none"
+                >
+                  <option value="slack">Slack Webhook</option>
+                  <option value="discord">Discord Webhook</option>
+                  <option value="pagerduty">PagerDuty Alert</option>
+                  <option value="webhook">Custom Webhook</option>
+                </select>
+                <input
+                  type="text"
+                  value={notifyUrl}
+                  onChange={(e) => setNotifyUrl(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-200 outline-none flex-1 font-mono"
+                />
+                <button onClick={handleAddRule} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1">
+                  <Plus size={14} /> Add Notification Rule
+                </button>
+              </div>
+
+              {rules.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-[#232733]">
+                  {rules.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between bg-[#0e0f12] p-3 rounded border border-[#232733] text-xs font-mono">
+                      <div className="flex items-center gap-3">
+                        <span className="text-indigo-400 font-bold uppercase">{r.channel}</span>
+                        <span className="text-gray-400 truncate max-w-sm">{r.targetUrl}</span>
+                      </div>
+                      <span className="text-emerald-400 font-semibold">Active ({r.events.length} events)</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'releases' && (
+          <div className="bg-[#14161b] border border-[#232733] rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#232733] pb-3">
+              <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                <FileText size={16} className="text-indigo-400" /> Automated Release Notes & Documentation Suite
+              </h2>
+              <button
+                onClick={() => setShowChangelogModal(true)}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded flex items-center gap-1.5"
+              >
+                <FileText size={14} /> Generate Release Changelog
+              </button>
+            </div>
+
+            <div className="text-xs text-gray-400 space-y-2">
+              <p>VisualStack Studio automatically distills Git commits, active cloud deployments, and container build metadata into Markdown release notes and documentation.</p>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Changelog Modal */}
+      {showChangelogModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-[#14161b] border border-[#232733] rounded-xl w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-[#232733] flex items-center justify-between">
+              <span className="text-xs font-bold font-mono text-indigo-400">Release Changelog (v1.0.0)</span>
+              <button onClick={() => setShowChangelogModal(false)} className="text-gray-400 hover:text-white px-2">✕</button>
+            </div>
+            <pre className="p-5 bg-[#08090d] font-mono text-xs text-gray-200 overflow-y-auto h-96 custom-scrollbar whitespace-pre-wrap">
+              {docGenerator.generateChangelog('v1.0.0')}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
