@@ -8,6 +8,7 @@ import { projectModelExporter } from '../../../../application/ir/ProjectModelExp
 import { compiler } from '../../../../compiler/Compiler';
 import type { StageLog } from '../../../../compiler/CompilerLogger';
 import type { DiagnosticItem } from '../../../../compiler/CompilerDiagnostics';
+import { localDatabaseManager } from '../../../../runtime/db/LocalDatabaseManager';
 
 type BottomTab =
   | 'logs'
@@ -394,14 +395,47 @@ export const ExecutionConsole: React.FC = () => {
           </div>
         )}
 
-        {/* 5. DB Queries */}
+        {/* 5. DB Queries & Local Database Runtime */}
         {activeTab === 'db_queries' && (
-          <div className="space-y-2">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider pb-1">
-              Generated SQL & NoSQL Statements
+          <div className="space-y-3 font-sans">
+            <div className="p-3 bg-[#14161d] border border-[#232733] rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Icons.Database size={18} className="text-amber-400" />
+                <div>
+                  <h4 className="text-xs font-bold text-white font-mono">SQLite Local Database Engine (prisma/dev.db)</h4>
+                  <p className="text-[11px] text-gray-400">Status: <strong className="text-emerald-400 uppercase">CONNECTED</strong> | Tables: <strong>4</strong></p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    const msg = await localDatabaseManager.runMigration();
+                    alert(msg);
+                  }}
+                  className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Run Migration
+                </button>
+                <button
+                  onClick={async () => {
+                    const msg = await localDatabaseManager.seedDatabase();
+                    alert(msg);
+                  }}
+                  className="px-3 py-1 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-gray-300 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Seed Database
+                </button>
+              </div>
             </div>
-            <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded font-mono text-emerald-400 leading-relaxed">
-              SELECT id, email, role, created_at FROM users WHERE email = $1 LIMIT 1;
+
+            <div className="space-y-1 font-mono">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider font-sans">
+                Generated SQL Statements
+              </div>
+              <div className="p-2.5 bg-[#14161d] border border-[#232733] rounded text-emerald-400 leading-relaxed">
+                SELECT id, email, role, created_at FROM users WHERE email = $1 LIMIT 1;
+              </div>
             </div>
           </div>
         )}

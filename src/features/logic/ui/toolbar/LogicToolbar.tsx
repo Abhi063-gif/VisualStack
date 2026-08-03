@@ -11,6 +11,7 @@ import { LivePreviewPanel } from '../../../../components/preview/LivePreviewPane
 import { FileExplorerModal } from '../../../../components/explorer/FileExplorerModal';
 import { PackageManagerModal } from '../../../../components/packages/PackageManagerModal';
 import { EnvironmentModal } from '../../../../components/config/EnvironmentModal';
+import { TerminalEmulatorModal } from '../../../../components/terminal/TerminalEmulatorModal';
 
 export const LogicToolbar: React.FC = () => {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -25,6 +26,7 @@ export const LogicToolbar: React.FC = () => {
   const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(false);
   const [isPackageManagerOpen, setIsPackageManagerOpen] = useState(false);
   const [isEnvironmentOpen, setIsEnvironmentOpen] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   const screens = screenManager.getAllScreens();
   const activeScreen = screens.find((s) => s.id === activeScreenId) || screens[0];
@@ -110,7 +112,7 @@ export const LogicToolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Controls: Files, Packages, Env, Live Preview, Run Graph, Export IR JSON */}
+        {/* Right Controls: Files, Packages, Env, Terminal, Live Preview, Run Graph */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsFileExplorerOpen(true)}
@@ -137,6 +139,15 @@ export const LogicToolbar: React.FC = () => {
           >
             <Icons.KeyRound size={14} className="text-cyan-400" />
             <span>.env</span>
+          </button>
+
+          <button
+            onClick={() => setIsTerminalOpen(true)}
+            className="px-2 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-gray-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="DevTools Terminal Shell"
+          >
+            <Icons.Terminal size={14} className="text-emerald-400" />
+            <span>Terminal</span>
           </button>
 
           <div className="h-4 w-[1px] bg-[#232733]" />
@@ -214,6 +225,7 @@ export const LogicToolbar: React.FC = () => {
       <FileExplorerModal isOpen={isFileExplorerOpen} onClose={() => setIsFileExplorerOpen(false)} />
       <PackageManagerModal isOpen={isPackageManagerOpen} onClose={() => setIsPackageManagerOpen(false)} />
       <EnvironmentModal isOpen={isEnvironmentOpen} onClose={() => setIsEnvironmentOpen(false)} />
+      <TerminalEmulatorModal isOpen={isTerminalOpen} onClose={() => setIsTerminalOpen(false)} />
     </>
   );
 };
