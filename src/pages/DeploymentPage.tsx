@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Rocket, ShieldCheck, Globe, RotateCcw, Server, Activity, RefreshCw, Lock, Cpu, Box, Code, Plus, Trash2, Key, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Rocket, ShieldCheck, Globe, RotateCcw, Server, Activity, RefreshCw, Lock, Cpu, Box, Code, Plus, Trash2, Key, Download, CheckCircle2, AlertCircle, Copy, Check, Terminal } from 'lucide-react';
 import { deploymentCenter } from '../deployment/DeploymentCenter';
 import { providerRegistry } from '../deployment/providers/ProviderRegistry';
 import { secretsVault, type SecretCategory } from '../deployment/security/SecretsVault';
@@ -35,6 +35,8 @@ export const DeploymentPage: React.FC = () => {
   // Domain State
   const [domains, setDomains] = useState(domainManager.getDomains());
   const [newDomainInput, setNewDomainInput] = useState('');
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [verifyingDomainId, setVerifyingDomainId] = useState<string | null>(null);
 
   const providers = providerRegistry.getAll();
 
@@ -91,9 +93,17 @@ export const DeploymentPage: React.FC = () => {
     setNewDomainInput('');
   };
 
-  const handleVerifyDomain = (id: string) => {
-    domainManager.verifyDomain(id);
+  const handleVerifyDomain = async (id: string) => {
+    setVerifyingDomainId(id);
+    await domainManager.verifyDomain(id);
     setDomains(domainManager.getDomains());
+    setVerifyingDomainId(null);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   return (
@@ -438,9 +448,16 @@ export const DeploymentPage: React.FC = () => {
 
         {activeTab === 'domains' && (
           <div className="bg-[#14161b] border border-[#232733] rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
-              <Globe size={16} className="text-indigo-400" /> Custom Domains & SSL Certificates
-            </h2>
+            <div className="flex items-center justify-between border-b border-[#232733] pb-3">
+              <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                <Globe size={16} className="text-indigo-400" /> Custom Domains & SSL Verification System
+              </h2>
+              {copiedText && (
+                <span className="text-xs text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                  Copied to clipboard: {copiedText}
+                </span>
+              )}
+            </div>
 
             {/* Add Domain Form */}
             <div className="flex items-center gap-2">
@@ -448,7 +465,7 @@ export const DeploymentPage: React.FC = () => {
                 type="text"
                 value={newDomainInput}
                 onChange={(e) => setNewDomainInput(e.target.value)}
-                placeholder="e.g. app.mycompany.com"
+                placeholder="e.g. app.mycompany.com or mycompany.com"
                 className="bg-[#0e0f12] border border-[#232733] rounded px-3 py-1.5 text-xs text-gray-200 outline-none flex-1 font-mono"
               />
               <button onClick={handleAddDomain} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold flex items-center gap-1">
@@ -460,12 +477,15 @@ export const DeploymentPage: React.FC = () => {
             {domains.length === 0 ? (
               <div className="text-xs text-gray-500 py-6 text-center">No custom domains configured. Add your domain above to generate DNS records and SSL certificates.</div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {domains.map((d) => (
                   <div key={d.id} className="bg-[#0e0f12] p-4 rounded-lg border border-[#232733] space-y-3 text-xs">
                     <div className="flex items-center justify-between border-b border-[#232733] pb-2">
                       <div className="flex items-center gap-3">
                         <span className="font-mono text-indigo-400 font-bold text-sm">{d.domain}</span>
+                        <span className="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-[10px] uppercase font-mono">
+                          {d.isApex ? 'Apex Root Domain' : 'Subdomain'}
+                        </span>
                         <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1 ${
                           d.verified ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
                         }`}>
@@ -474,25 +494,68 @@ export const DeploymentPage: React.FC = () => {
                         </span>
                       </div>
 
-                      {!d.verified && (
-                        <button onClick={() => handleVerifyDomain(d.id)} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold">
-                          Verify DNS Records
+                      <div className="flex items-center gap-2">
+                        {!d.verified && (
+                          <button
+                            onClick={() => handleVerifyDomain(d.id)}
+                            disabled={verifyingDomainId === d.id}
+                            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold flex items-center gap-1.5"
+                          >
+                            {verifyingDomainId === d.id ? <RefreshCw className="animate-spin" size={12} /> : <ShieldCheck size={12} />}
+                            {verifyingDomainId === d.id ? 'Checking DNS...' : 'Verify DNS Records'}
+                          </button>
+                        )}
+                        <button onClick={() => { domainManager.removeDomain(d.id); setDomains(domainManager.getDomains()); }} className="p-1 text-gray-500 hover:text-rose-400">
+                          <Trash2 size={14} />
                         </button>
-                      )}
+                      </div>
                     </div>
 
-                    {/* DNS Records Table */}
-                    <div className="space-y-1">
-                      <div className="text-[10px] text-gray-500 font-semibold uppercase">Required DNS Records:</div>
+                    {/* DNS Records Table with Copy Action */}
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Required DNS Provider Records:</div>
                       {d.dnsRecords.map((r, i) => (
-                        <div key={i} className="flex items-center justify-between bg-[#14161b] px-3 py-1.5 rounded font-mono text-[11px] border border-[#232733]">
-                          <span className="text-amber-400 font-bold w-16">{r.type}</span>
-                          <span className="text-gray-300 w-32 truncate">{r.name}</span>
-                          <span className="text-gray-400 flex-1 truncate">{r.value}</span>
-                          <span className={`text-[10px] uppercase ${r.status === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`}>{r.status}</span>
+                        <div key={i} className="flex items-center justify-between bg-[#14161b] px-3 py-2 rounded font-mono text-[11px] border border-[#232733]">
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="text-amber-400 font-bold w-14">{r.type}</span>
+                            <span className="text-gray-300 w-28 truncate">{r.name}</span>
+                            <span className="text-gray-400 flex-1 truncate">{r.value}</span>
+                            <span className="text-gray-500 text-[10px]">TTL {r.ttl}s</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => copyToClipboard(r.value)}
+                              title="Copy Record Value"
+                              className="px-2 py-0.5 bg-[#1f232d] hover:bg-indigo-600/30 text-indigo-400 rounded text-[10px] flex items-center gap-1"
+                            >
+                              {copiedText === r.value ? <Check size={10} /> : <Copy size={10} />}
+                              <span>{copiedText === r.value ? 'Copied' : 'Copy Value'}</span>
+                            </button>
+                            <span className={`text-[10px] uppercase font-semibold ${r.status === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`}>{r.status}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
+
+                    {/* Diagnostic Logs Streamer */}
+                    {d.diagnosticLogs.length > 0 && (
+                      <div className="bg-[#14161b] p-2.5 rounded border border-[#232733] space-y-1">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <Terminal size={12} className="text-indigo-400" /> DNS Propagation Diagnostic Logs
+                        </div>
+                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                          {d.diagnosticLogs.map((log, idx) => (
+                            <div key={idx} className="text-[10px] font-mono flex items-center gap-2">
+                              <span className="text-gray-500">{log.timestamp}</span>
+                              <span className="text-indigo-400 font-semibold">[{log.step}]</span>
+                              <span className={log.status === 'success' ? 'text-emerald-400' : log.status === 'warning' ? 'text-amber-400' : 'text-gray-300'}>
+                                {log.message}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
