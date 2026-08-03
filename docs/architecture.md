@@ -1,49 +1,11 @@
 # VisualStack Studio Architecture
 
-## System Overview
-VisualStack Studio is an end-to-end visual IDE that compiles full-stack applications from visual canvas models into production source code and runs them locally.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    VisualStack Studio                   │
-├───────────────┬────────────────────────┬────────────────┤
-│ Module 01-03  │       Module 04        │   Module 05    │
-│  UI Canvas    │    Logic Workflows     │ Project Resources│
-└───────┬───────┴───────────┬────────────┴────────┬───────┘
-        │                   │                     │
-        └───────────────────┼─────────────────────┘
-                            ▼
-              ┌───────────────────────────┐
-              │ Unified Project IR Export │
-              └─────────────┬─────────────┘
-                            ▼
-       ┌─────────────────────────────────────────┐
-       │     Module 06 Compiler Engine           │
-       ├─────────────────────────────────────────┤
-       │ 1. Parse Project IR                     │
-       │ 2. Validate (CompilerValidator)         │
-       │ 3. Optimize (CompilerOptimizer)         │
-       │ 4. Transform AST                        │
-       │ 5. Generate (7 Framework Adapters)      │
-       │ 6. Format & Incremental Hash Diff       │
-       │ 7. Export Project Bundle & Assets       │
-       └────────────────────┬────────────────────┘
-                            ▼
-       ┌─────────────────────────────────────────┐
-       │ Module 07 Local Runtime & Preview Engine │
-       ├─────────────────────────────────────────┤
-       │ 1. Workspace Manager & File Watcher     │
-       │ 2. Runtime Engine & Process Manager     │
-       │ 3. Live Dev Server & Hot Reload Engine  │
-       │ 4. Device Simulator & Live Preview      │
-       │ 5. Embedded SQLite DB & Migrations      │
-       │ 6. Integrated DevTools Terminal Shell   │
-       └─────────────────────────────────────────┘
-```
-
-## Architectural Guarantee
-The VisualStack Compiler (`src/compiler/`) and Runtime Engine (`src/runtime/`) are framework-independent and modular.
-1. The compiler never reads Konva or React Flow directly.
-2. All inputs pass through 16 Project IR models (`src/compiler/ir/`).
-3. Multi-framework generation is plugin-based (`FrameworkAdapter`).
-4. Live local execution runs inside the IDE without requiring VS Code or external terminal tools.
+VisualStack Studio is built on a modular engine architecture:
+1. **Module 01**: EventBus, Services & Core Architecture
+2. **Module 02**: Compiler & Multi-Framework Code Generators
+3. **Module 03**: Designer Engine, SceneGraph & Canvas
+4. **Module 04**: Visual Logic Engine & Workflow Interpreter
+5. **Module 05**: Resource Manager & Asset Pipeline
+6. **Module 06**: Code Inspector & Exporter
+7. **Module 07**: Local Runtime Environment, Dev Server & Live Preview
+8. **Module 08**: Deployment Engine, DevOps, Git Integration & Cloud Infrastructure

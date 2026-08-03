@@ -10,6 +10,7 @@ const BackendPage = lazy(() => import('../pages/BackendPage'));
 const PreviewPage = lazy(() => import('../pages/PreviewPage'));
 const PluginsPage = lazy(() => import('../pages/PluginsPage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
+const DeploymentPage = lazy(() => import('../pages/DeploymentPage').then(m => ({ default: m.DeploymentPage })));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/designer" element={<DesignerPage />} />
           <Route path="/backend" element={<BackendPage />} />
           <Route path="/preview" element={<PreviewPage />} />
+          <Route path="/deployment" element={<DeploymentPage />} />
           <Route path="/plugins" element={<PluginsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/designer" replace />} />

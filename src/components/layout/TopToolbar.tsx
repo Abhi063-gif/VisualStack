@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useHistoryStore } from '../../stores/HistoryStore';
@@ -9,6 +10,7 @@ import { cn } from '../../utils/cn';
 import { CodeInspectorModal } from './CodeInspectorModal';
 
 export const TopToolbar: React.FC = () => {
+  const navigate = useNavigate();
   const { canUndo, canRedo } = useHistoryStore();
   const { selectedComponentIds } = useSelectionStore();
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -27,7 +29,7 @@ export const TopToolbar: React.FC = () => {
   };
 
   const handleDeploy = () => {
-    setIsCodeInspectorOpen(true);
+    navigate('/deployment');
   };
 
   return (
@@ -63,24 +65,23 @@ export const TopToolbar: React.FC = () => {
               onClick={() => commandManager.undo()}
               title="Undo (Ctrl+Z)"
             >
-              <Undo2 size={14} />
+              <Undo2 size={13} />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               disabled={!canRedo}
               onClick={() => commandManager.redo()}
-              title="Redo (Ctrl+Shift+Z)"
+              title="Redo (Ctrl+Y)"
             >
-              <Redo2 size={14} />
+              <Redo2 size={13} />
             </Button>
           </div>
 
-          {/* Device Preview Switcher */}
           <div className="flex items-center gap-1 bg-[#14161b] p-0.5 rounded border border-[#232733]">
             <button
               onClick={() => setDeviceMode('desktop')}
-              title="Desktop View (1920px)"
+              title="Desktop View (1440px)"
               className={cn('p-1 rounded cursor-pointer', deviceMode === 'desktop' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-200')}
             >
               <Monitor size={13} />
@@ -126,7 +127,7 @@ export const TopToolbar: React.FC = () => {
             <Play size={12} className="text-emerald-400 fill-emerald-400" />
             <span>Run</span>
           </Button>
-          <Button variant="default" size="sm" onClick={handleDeploy} className="gap-1.5 text-xs">
+          <Button variant="default" size="sm" onClick={handleDeploy} className="gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white">
             <Rocket size={12} />
             <span>Deploy</span>
           </Button>
