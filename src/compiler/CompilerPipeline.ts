@@ -4,6 +4,8 @@ import { projectModelExporter } from '../application/ir/ProjectModelExporter';
 import { compilerValidator } from './validation/CompilerValidator';
 import { compilerOptimizer } from './optimization/CompilerOptimizer';
 import { codeGenerator } from './generators/CodeGenerator';
+import { assetPipeline } from './assets/AssetPipeline';
+import { incrementalGenerator } from './incremental/IncrementalGenerator';
 
 export class CompilerPipeline {
   public async execute(context: CompilerContext): Promise<GeneratedFile[]> {
@@ -233,9 +235,11 @@ export class CompilerPipeline {
     for (const file of context.generatedFiles) {
       file.content = file.content.trim() + '\n';
     }
+    context.generatedFiles = incrementalGenerator.processIncrementalFiles(context.generatedFiles);
   }
 
-  private stage7Export(_context: CompilerContext): void {
-    // Stage 7 Export complete
+  private stage7Export(context: CompilerContext): void {
+    const assetFiles = assetPipeline.exportAssetFiles();
+    context.generatedFiles = [...context.generatedFiles, ...assetFiles];
   }
 }
