@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from '../ui/Tabs';
 import { useLayoutStore } from '../../stores/LayoutStore';
 import type { BottomPanelTab } from '../../types/editor';
-import { Terminal as TerminalIcon, AlertCircle, Code, Bot, Cpu } from 'lucide-react';
+import { Terminal as TerminalIcon, AlertCircle, Code, Cpu } from 'lucide-react';
 import { CodeEditor } from '../editor/CodeEditor';
 
 export const BottomPanel: React.FC = () => {
@@ -13,7 +13,6 @@ export const BottomPanel: React.FC = () => {
     { id: 'console', label: 'Console', icon: <Cpu size={14} /> },
     { id: 'problems', label: 'Problems', icon: <AlertCircle size={14} /> },
     { id: 'code', label: 'Generated Code', icon: <Code size={14} /> },
-    { id: 'ai', label: 'AI Chat', icon: <Bot size={14} /> },
   ];
 
   return (
@@ -46,18 +45,6 @@ export const BottomPanel: React.FC = () => {
         {activeBottomTab === 'code' && (
           <div className="h-full rounded overflow-hidden border border-[#232733]">
             <CodeEditor />
-          </div>
-        )}
-
-        {activeBottomTab === 'ai' && (
-          <div className="h-full bg-[#14161b] p-3 rounded border border-[#232733] text-gray-400 flex flex-col justify-between">
-            <div>[AI Engine] Ready to assist with .vstack schema edits.</div>
-            <input
-              type="text"
-              placeholder="Ask AI assistant..."
-              className="w-full bg-[#0e0f12] border border-[#232733] px-2 py-1 text-xs text-gray-200 rounded focus:outline-none focus:border-indigo-500"
-              readOnly
-            />
           </div>
         )}
       </div>

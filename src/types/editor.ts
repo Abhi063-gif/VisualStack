@@ -7,6 +7,6 @@ export interface EditorTab {
   isDirty?: boolean;
 }
 
-export type BottomPanelTab = 'terminal' | 'console' | 'problems' | 'code' | 'ai';
+export type BottomPanelTab = 'terminal' | 'console' | 'problems' | 'code';
 
 export type ActivityBarItem = 'explorer' | 'designer' | 'backend' | 'plugins' | 'settings';
