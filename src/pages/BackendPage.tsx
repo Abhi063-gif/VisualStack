@@ -6,6 +6,7 @@ import { PropertyPanel } from '../features/logic/ui/inspector/PropertyPanel';
 import { ExecutionConsole } from '../features/logic/ui/console/ExecutionConsole';
 import { LogicCanvasContent } from '../features/logic/ui/canvas/LogicCanvas';
 import { screenManager } from '../application/screens/ScreenManager';
+import { RuntimeStatusBar } from '../components/layout/RuntimeStatusBar';
 
 export const BackendPage: React.FC = () => {
   const [leftWidth, setLeftWidth] = useState(260);
@@ -136,6 +137,9 @@ export const BackendPage: React.FC = () => {
             <PropertyPanel />
           </div>
         </div>
+
+        {/* IDE Runtime Status Bar */}
+        <RuntimeStatusBar />
       </div>
     </ReactFlowProvider>
   );
