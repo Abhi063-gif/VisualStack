@@ -7,6 +7,7 @@ import { useLogicStore } from '../../../../stores/LogicStore';
 import { screenManager } from '../../../../application/screens/ScreenManager';
 import { projectModelExporter } from '../../../../application/ir/ProjectModelExporter';
 import { WorkspaceModal } from '../../../../components/layout/WorkspaceModal';
+import { LivePreviewPanel } from '../../../../components/preview/LivePreviewPanel';
 
 export const LogicToolbar: React.FC = () => {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -15,6 +16,7 @@ export const LogicToolbar: React.FC = () => {
   const [activeScreenId, setActiveScreenId] = useState<string>(screenManager.getActiveScreenId());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
+  const [isPreviewPanelOpen, setIsPreviewPanelOpen] = useState(false);
 
   const screens = screenManager.getAllScreens();
   const activeScreen = screens.find((s) => s.id === activeScreenId) || screens[0];
@@ -100,8 +102,16 @@ export const LogicToolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Controls: Workspace Modal, Run Graph, Export IR JSON, Viewport Controls */}
+        {/* Right Controls: Workspace Modal, Live Preview, Run Graph, Export IR JSON */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPreviewPanelOpen(true)}
+            className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow"
+          >
+            <Icons.Eye size={14} />
+            <span>Live Preview</span>
+          </button>
+
           <button
             onClick={() => setIsWorkspaceModalOpen(true)}
             className="px-2.5 py-1.5 rounded bg-[#181a20] hover:bg-[#232733] border border-[#232733] text-gray-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -113,7 +123,7 @@ export const LogicToolbar: React.FC = () => {
           <button
             onClick={handleRunGraph}
             disabled={isRunning}
-            className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow"
+            className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow"
           >
             <Icons.Play size={14} />
             <span>{isRunning ? 'Executing...' : 'Run Logic'}</span>
@@ -163,6 +173,7 @@ export const LogicToolbar: React.FC = () => {
       </div>
 
       <WorkspaceModal isOpen={isWorkspaceModalOpen} onClose={() => setIsWorkspaceModalOpen(false)} />
+      <LivePreviewPanel isOpen={isPreviewPanelOpen} onClose={() => setIsPreviewPanelOpen(false)} />
     </>
   );
 };
