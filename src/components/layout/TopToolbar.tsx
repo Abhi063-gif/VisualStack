@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2 } from 'lucide-react';
+import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useHistoryStore } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
@@ -8,6 +8,8 @@ import { commandManager } from '../../core/commands/CommandManager';
 import { notificationService } from '../../services/NotificationService';
 import { cn } from '../../utils/cn';
 import { CodeInspectorModal } from './CodeInspectorModal';
+import { AIChatPanel } from '../ai/AIChatPanel';
+import { AICommandPalette } from '../ai/AICommandPalette';
 
 export const TopToolbar: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +17,8 @@ export const TopToolbar: React.FC = () => {
   const { selectedComponentIds } = useSelectionStore();
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isCodeInspectorOpen, setIsCodeInspectorOpen] = useState(false);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [isAiCommandPaletteOpen, setIsAiCommandPaletteOpen] = useState(false);
 
   const handleSave = () => {
     notificationService.success('Project saved (.vstack format)');
@@ -37,6 +41,16 @@ export const TopToolbar: React.FC = () => {
       <CodeInspectorModal
         isOpen={isCodeInspectorOpen}
         onClose={() => setIsCodeInspectorOpen(false)}
+      />
+
+      <AIChatPanel
+        isOpen={isAiChatOpen}
+        onClose={() => setIsAiChatOpen(false)}
+      />
+
+      <AICommandPalette
+        isOpen={isAiCommandPaletteOpen}
+        onClose={() => setIsAiCommandPaletteOpen(false)}
       />
 
       <div className="h-9 bg-[#0e0f12] border-b border-[#232733] flex items-center justify-between px-3 text-xs text-gray-300 select-none z-20">
@@ -108,8 +122,32 @@ export const TopToolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Actions */}
+        {/* Right: Actions & AI Triggers */}
         <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsAiCommandPaletteOpen(true)}
+            className="gap-1 text-xs text-amber-400 hover:text-amber-300"
+            title="Open AI Command Palette (Ctrl+K)"
+          >
+            <Command size={13} />
+            <span>AI Palette</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsAiChatOpen(!isAiChatOpen)}
+            className="gap-1 text-xs text-indigo-400 hover:text-indigo-300 font-bold"
+            title="Open AI Assistant Chat"
+          >
+            <Sparkles size={13} />
+            <span>AI Copilot</span>
+          </Button>
+
+          <span className="text-gray-600">|</span>
+
           <Button variant="ghost" size="sm" onClick={handleSave} className="gap-1 text-xs">
             <Save size={13} />
             <span>Save</span>
