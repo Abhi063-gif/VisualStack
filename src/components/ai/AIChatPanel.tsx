@@ -6,6 +6,7 @@ import { aiSecurityFilter } from '../../ai/security/AISecurityFilter';
 import { contextEngine } from '../../ai/core/ContextEngine';
 import { toolCallingEngine } from '../../ai/tools/ToolCallingEngine';
 import { visualDesignAssistant } from '../../ai/services/VisualDesignAssistant';
+import { backendAI } from '../../ai/services/BackendAI';
 
 export interface ChatMessage {
   id: string;
@@ -21,7 +22,7 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     {
       id: 'msg_welcome',
       sender: 'assistant',
-      content: 'Hello! I am **VisualStack AI Assistant**. How can I help you build, refactor, or deploy your application today?',
+      content: 'Hello! I am **VisualStack AI Assistant**. How can I help you build UI designs, backend logic, or deploy your application today?',
       timestamp: new Date().toLocaleTimeString(),
     },
   ]);
@@ -67,16 +68,22 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     const sanitizedInput = aiSecurityFilter.sanitizePrompt(text);
     const systemContext = contextEngine.getSystemPromptWithContext(sanitizedInput);
 
-    // Real AI tool detection and execution
+    // Fullstack AI tool detection and execution
     let toolResultText = '';
     const lowerText = text.toLowerCase();
 
     if (lowerText.includes('landing page') || lowerText.includes('landing')) {
-      toolResultText = visualDesignAssistant.createLandingPage();
-    } else if (lowerText.includes('login') || lowerText.includes('auth page')) {
-      toolResultText = visualDesignAssistant.createLoginScreen();
+      const uiRes = visualDesignAssistant.createLandingPage();
+      const backendRes = backendAI.generateAuthWorkflowNodes();
+      toolResultText = `${uiRes} | ${backendRes}`;
+    } else if (lowerText.includes('login') || lowerText.includes('auth')) {
+      const uiRes = visualDesignAssistant.createLoginScreen();
+      const backendRes = backendAI.generateAuthWorkflowNodes();
+      toolResultText = `${uiRes} | ${backendRes}`;
     } else if (lowerText.includes('dashboard') || lowerText.includes('crm')) {
-      toolResultText = visualDesignAssistant.createCRMDashboard();
+      const uiRes = visualDesignAssistant.createCRMDashboard();
+      const backendRes = backendAI.generateAuthWorkflowNodes();
+      toolResultText = `${uiRes} | ${backendRes}`;
     } else if (lowerText.includes('commit') || lowerText.includes('push')) {
       toolResultText = await toolCallingEngine.executeToolCall('git_commit', { message: text, isAmend: false });
     } else if (lowerText.includes('deploy')) {
