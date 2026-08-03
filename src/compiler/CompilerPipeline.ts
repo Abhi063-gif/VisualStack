@@ -1,6 +1,8 @@
 import { CompilerContext, type GeneratedFile } from './CompilerContext';
 import type { ProjectIR } from './ir/ProjectIR';
 import { projectModelExporter } from '../application/ir/ProjectModelExporter';
+import { compilerValidator } from './validation/CompilerValidator';
+import { compilerOptimizer } from './optimization/CompilerOptimizer';
 
 export class CompilerPipeline {
   public async execute(context: CompilerContext): Promise<GeneratedFile[]> {
@@ -201,28 +203,12 @@ export class CompilerPipeline {
 
   private stage2Validate(context: CompilerContext): void {
     if (!context.ir) return;
-
-    if (context.ir.screens.length === 0) {
-      context.diagnostics.error('ERR_NO_SCREENS', 'Project contains no designed screens.', 'CompilerPipeline');
-    }
-
-    const routes = new Set<string>();
-    for (const scr of context.ir.screens) {
-      if (routes.has(scr.route.path)) {
-        context.diagnostics.error(
-          'ERR_DUPLICATE_ROUTE',
-          `Duplicate route path detected: "${scr.route.path}" on screen "${scr.name}".`,
-          'CompilerPipeline',
-          scr.id
-        );
-      }
-      routes.add(scr.route.path);
-    }
+    compilerValidator.validate(context.ir, context.diagnostics);
   }
 
   private stage3Optimize(context: CompilerContext): void {
     if (!context.ir) return;
-    context.ir.globalVariables = context.ir.globalVariables.filter((v) => Boolean(v.name));
+    compilerOptimizer.optimize(context.ir, context.diagnostics);
   }
 
   private stage4Transform(_context: CompilerContext): void {

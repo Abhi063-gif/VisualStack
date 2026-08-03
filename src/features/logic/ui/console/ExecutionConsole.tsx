@@ -7,6 +7,7 @@ import { runtimeSimulatorEngine } from '../../../../application/simulator/Runtim
 import { projectModelExporter } from '../../../../application/ir/ProjectModelExporter';
 import { compiler } from '../../../../compiler/Compiler';
 import type { StageLog } from '../../../../compiler/CompilerLogger';
+import type { DiagnosticItem } from '../../../../compiler/CompilerDiagnostics';
 
 type BottomTab =
   | 'logs'
@@ -27,6 +28,7 @@ export const ExecutionConsole: React.FC = () => {
   const [simProgress, setSimProgress] = useState(0);
 
   const [compilerStageLogs, setCompilerStageLogs] = useState<StageLog[]>([]);
+  const [compilerDiagnostics, setCompilerDiagnostics] = useState<DiagnosticItem[]>([]);
   const [compilerIRJson, setCompilerIRJson] = useState<string>('');
   const [isCompiling, setIsCompiling] = useState(false);
 
@@ -66,6 +68,7 @@ export const ExecutionConsole: React.FC = () => {
     setIsCompiling(true);
     const { context } = await compiler.compile({ targetFramework: 'react-express' });
     setCompilerStageLogs(context.logger.getLogs());
+    setCompilerDiagnostics(context.diagnostics.getAll());
     if (context.ir) {
       setCompilerIRJson(JSON.stringify(context.ir, null, 2));
     }
@@ -75,8 +78,17 @@ export const ExecutionConsole: React.FC = () => {
   const filteredLogs =
     filterLevel === 'all' ? executionLogs : executionLogs.filter((log) => log.level === filterLevel);
 
-  const errors = validationIssues.filter((i: any) => i.severity === 'error' || i.type === 'error');
-  const warnings = validationIssues.filter((i: any) => i.severity === 'warning' || i.type === 'warning');
+  const compilerErrors = compilerDiagnostics.filter((d) => d.severity === 'error');
+  const compilerWarnings = compilerDiagnostics.filter((d) => d.severity === 'warning' || d.severity === 'info');
+
+  const errors = [
+    ...validationIssues.filter((i: any) => i.severity === 'error' || i.type === 'error'),
+    ...compilerErrors,
+  ];
+  const warnings = [
+    ...validationIssues.filter((i: any) => i.severity === 'warning' || i.type === 'warning'),
+    ...compilerWarnings,
+  ];
 
   return (
     <div className="h-full bg-[#0c0d12] border-t border-[#232733] flex flex-col font-sans select-none text-xs text-gray-300 overflow-hidden box-border">
@@ -451,7 +463,13 @@ export const ExecutionConsole: React.FC = () => {
               errors.map((e: any, idx: number) => (
                 <div key={e.id || idx} className="p-2 bg-red-950/30 border border-red-900/50 rounded text-red-300 flex items-center gap-2">
                   <Icons.AlertCircle size={13} className="text-red-400 shrink-0" />
-                  <span>{e.message}</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      {e.code && <span className="font-bold text-red-400 font-mono text-[10px]">[{e.code}]</span>}
+                      <span>{e.message}</span>
+                    </div>
+                    {e.sourceModule && <span className="text-[9px] text-gray-400">Source: {e.sourceModule}</span>}
+                  </div>
                 </div>
               ))
             )}
@@ -467,7 +485,13 @@ export const ExecutionConsole: React.FC = () => {
               warnings.map((w: any, idx: number) => (
                 <div key={w.id || idx} className="p-2 bg-amber-950/30 border border-amber-900/50 rounded text-amber-300 flex items-center gap-2">
                   <Icons.AlertTriangle size={13} className="text-amber-400 shrink-0" />
-                  <span>{w.message}</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      {w.code && <span className="font-bold text-amber-400 font-mono text-[10px]">[{w.code}]</span>}
+                      <span>{w.message}</span>
+                    </div>
+                    {w.sourceModule && <span className="text-[9px] text-gray-400">Source: {w.sourceModule}</span>}
+                  </div>
                 </div>
               ))
             )}
