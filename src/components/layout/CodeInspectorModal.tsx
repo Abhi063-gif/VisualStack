@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { projectModelExporter } from '../../application/ir/ProjectModelExporter';
-import { codeCompiler, type GeneratedFile } from '../../compiler/CodeCompiler';
+import { codeCompiler, type GeneratedFile, type FrameworkTarget } from '../../compiler/CodeCompiler';
 
 interface CodeInspectorModalProps {
   isOpen: boolean;
@@ -10,23 +10,35 @@ interface CodeInspectorModalProps {
 
 export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({ isOpen, onClose }) => {
   const [selectedFileIdx, setSelectedFileIdx] = useState(0);
+  const [targetFramework, setTargetFramework] = useState<FrameworkTarget>('react-express');
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
   const ir = projectModelExporter.exportUnifiedIR();
-  const compiledFiles: GeneratedFile[] = codeCompiler.compileProject(ir);
+  const compiledFiles: GeneratedFile[] = codeCompiler.compileProject(ir, targetFramework);
   const activeFile = compiledFiles[selectedFileIdx] || compiledFiles[0];
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(activeFile.content);
+    navigator.clipboard.writeText(activeFile?.content || '');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadSingleFile = () => {
+    if (!activeFile) return;
+    const blob = new Blob([activeFile.content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = activeFile.path.split('/').pop() || 'source.ts';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadZip = () => {
-    // Generate JSON package download containing all files
     const fullProjectBundle = {
+      targetFramework,
       project: ir.metadata,
       files: compiledFiles,
     };
@@ -34,7 +46,7 @@ export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({ isOpen, 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `visualstack_full_project_source_${Date.now()}.json`;
+    a.download = `visualstack_${targetFramework}_source_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -50,9 +62,22 @@ export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({ isOpen, 
             </div>
             <div>
               <h2 className="text-sm font-bold text-white tracking-wide">Generated Application Source Code</h2>
-              <p className="text-[11px] text-gray-400">
-                React 19 + TypeScript + Vite + Express Node.js Server ({compiledFiles.length} Source Files)
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[11px] text-gray-400">Framework Target:</span>
+                <select
+                  value={targetFramework}
+                  onChange={(e) => {
+                    setTargetFramework(e.target.value as FrameworkTarget);
+                    setSelectedFileIdx(0);
+                  }}
+                  className="bg-[#181a20] border border-[#232733] rounded px-2 py-0.5 text-xs text-indigo-400 font-mono font-semibold outline-none cursor-pointer"
+                >
+                  <option value="react-express">React 19 + Express Server</option>
+                  <option value="nextjs">Next.js 15 (App Router)</option>
+                  <option value="vue-express">Vue 3 + Express Server</option>
+                </select>
+                <span className="text-[10px] text-gray-500 font-mono">({compiledFiles.length} Source Files)</span>
+              </div>
             </div>
           </div>
 
@@ -86,7 +111,7 @@ export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({ isOpen, 
               {compiledFiles.map((file, idx) => {
                 const isActive = idx === selectedFileIdx;
                 const isServer = file.path.startsWith('server');
-                const isPage = file.path.startsWith('src/pages');
+                const isPage = file.path.startsWith('src/pages') || file.path.startsWith('app');
 
                 return (
                   <button
@@ -120,22 +145,33 @@ export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({ isOpen, 
             <div className="px-4 py-2 bg-[#14161d] border-b border-[#232733] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 font-mono text-xs text-indigo-400 font-semibold">
                 <Icons.FileCode size={14} />
-                <span>{activeFile.path}</span>
+                <span>{activeFile?.path || 'source.ts'}</span>
               </div>
 
-              <button
-                onClick={handleCopyCode}
-                className="px-2.5 py-1 rounded bg-[#181a20] hover:bg-[#232733] text-gray-300 hover:text-white border border-[#232733] text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                {copied ? <Icons.Check size={12} className="text-emerald-400" /> : <Icons.Copy size={12} />}
-                <span>{copied ? 'Copied!' : 'Copy Code'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadSingleFile}
+                  className="px-2.5 py-1 rounded bg-[#181a20] hover:bg-[#232733] text-gray-300 hover:text-white border border-[#232733] text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Download Active File"
+                >
+                  <Icons.FileDown size={12} />
+                  <span>Download File</span>
+                </button>
+
+                <button
+                  onClick={handleCopyCode}
+                  className="px-2.5 py-1 rounded bg-[#181a20] hover:bg-[#232733] text-gray-300 hover:text-white border border-[#232733] text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {copied ? <Icons.Check size={12} className="text-emerald-400" /> : <Icons.Copy size={12} />}
+                  <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Code Viewport */}
             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
               <pre className="font-mono text-xs text-gray-200 leading-relaxed whitespace-pre-wrap selection:bg-indigo-500/30">
-                {activeFile.content}
+                {activeFile?.content || ''}
               </pre>
             </div>
           </div>

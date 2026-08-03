@@ -1,5 +1,7 @@
 import type { UnifiedProjectIR } from '../application/ir/ProjectModelExporter';
 
+export type FrameworkTarget = 'react-express' | 'nextjs' | 'vue-express';
+
 export interface GeneratedFile {
   path: string;
   content: string;
@@ -7,7 +9,16 @@ export interface GeneratedFile {
 }
 
 export class CodeCompiler {
-  public compileProject(ir: UnifiedProjectIR): GeneratedFile[] {
+  public compileProject(ir: UnifiedProjectIR, target: FrameworkTarget = 'react-express'): GeneratedFile[] {
+    if (target === 'nextjs') {
+      return this.compileNextJS(ir);
+    } else if (target === 'vue-express') {
+      return this.compileVueExpress(ir);
+    }
+    return this.compileReactExpress(ir);
+  }
+
+  private compileReactExpress(ir: UnifiedProjectIR): GeneratedFile[] {
     const files: GeneratedFile[] = [];
 
     // 1. package.json
@@ -98,7 +109,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );`,
     });
 
-    // 4. Generate Page Components for each Screen
+    // 4. Page Components for each Screen
     for (const scr of ir.screens) {
       const pageName = scr.name.replace(/\s+/g, '');
       files.push({
@@ -165,6 +176,129 @@ app.listen(PORT, () => {
       path: '.env',
       type: 'markdown',
       content: envLines.join('\n') || 'VITE_API_BASE_URL=http://localhost:3000/api',
+    });
+
+    return files;
+  }
+
+  private compileNextJS(ir: UnifiedProjectIR): GeneratedFile[] {
+    const files: GeneratedFile[] = [];
+
+    files.push({
+      path: 'package.json',
+      type: 'json',
+      content: JSON.stringify(
+        {
+          name: 'visualstack-nextjs-app',
+          version: '1.0.0',
+          private: true,
+          scripts: {
+            dev: 'next dev',
+            build: 'next build',
+            start: 'next start',
+          },
+          dependencies: {
+            next: '^15.0.0',
+            react: '^19.0.0',
+            'react-dom': '^19.0.0',
+            'lucide-react': '^0.470.0',
+          },
+          devDependencies: {
+            typescript: '^5.7.0',
+            '@types/node': '^22.0.0',
+            '@types/react': '^19.0.0',
+            tailwindcss: '^3.4.0',
+          },
+        },
+        null,
+        2
+      ),
+    });
+
+    files.push({
+      path: 'app/layout.tsx',
+      type: 'typescript',
+      content: `import React from 'react';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body className="bg-gray-950 text-white min-h-screen">{children}</body>
+    </html>
+  );
+}`,
+    });
+
+    for (const scr of ir.screens) {
+      const pagePath = scr.route.path === '/' ? 'app/page.tsx' : `app${scr.route.path}/page.tsx`;
+      files.push({
+        path: pagePath,
+        type: 'typescript',
+        content: `import React from 'react';
+
+export default function Page() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center justify-center p-8">
+      <div className="max-w-2xl w-full bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl space-y-6">
+        <h1 className="text-3xl font-bold text-white tracking-tight">${scr.name} (Next.js 15)</h1>
+        <p className="text-gray-400 text-sm">Route Path: <code className="text-indigo-400 bg-gray-950 px-2 py-1 rounded font-mono">${scr.route.path}</code></p>
+      </div>
+    </div>
+  );
+}`,
+      });
+    }
+
+    return files;
+  }
+
+  private compileVueExpress(_ir: UnifiedProjectIR): GeneratedFile[] {
+    const files: GeneratedFile[] = [];
+
+    files.push({
+      path: 'package.json',
+      type: 'json',
+      content: JSON.stringify(
+        {
+          name: 'visualstack-vue-app',
+          version: '1.0.0',
+          private: true,
+          scripts: {
+            dev: 'vite',
+            build: 'vite build',
+          },
+          dependencies: {
+            vue: '^3.5.0',
+            'vue-router': '^4.4.0',
+          },
+          devDependencies: {
+            '@vitejs/plugin-vue': '^5.1.0',
+            vite: '^6.0.0',
+            typescript: '^5.7.0',
+          },
+        },
+        null,
+        2
+      ),
+    });
+
+    files.push({
+      path: 'src/main.ts',
+      type: 'typescript',
+      content: `import { createApp } from 'vue';
+import App from './App.vue';
+
+createApp(App).mount('#app');`,
+    });
+
+    files.push({
+      path: 'src/App.vue',
+      type: 'html',
+      content: `<template>
+  <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+    <h1 className="text-3xl font-bold">VisualStack Vue 3 Application</h1>
+  </div>
+</template>`,
     });
 
     return files;
