@@ -31,6 +31,7 @@ export interface GitDiffResult {
 export class GitManager {
   private currentBranch = 'main';
   private remoteUrl = 'https://github.com/Abhi063-gif/VisualStack.git';
+  private accessToken = '';
   private uncommittedFiles: GitFileStatus[] = [];
   private commitHistory: GitCommitItem[] = [];
   private branches: string[] = ['main'];
@@ -38,6 +39,9 @@ export class GitManager {
 
   public getCurrentBranch(): string { return this.currentBranch; }
   public getRemoteUrl(): string { return this.remoteUrl; }
+  public setRemoteUrl(url: string): void { this.remoteUrl = url.trim(); }
+  public getAccessToken(): string { return this.accessToken; }
+  public setAccessToken(token: string): void { this.accessToken = token.trim(); }
   public getUncommittedFiles(): GitFileStatus[] { return [...this.uncommittedFiles]; }
   public getCommitHistory(): GitCommitItem[] { return [...this.commitHistory]; }
   public getBranches(): string[] { return [...this.branches]; }
