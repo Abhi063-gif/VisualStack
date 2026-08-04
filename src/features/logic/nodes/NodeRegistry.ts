@@ -1,90 +1,125 @@
 import type { NodeDefinition } from './NodeDefinition';
 export { buildInputPorts, buildOutputPorts } from './NodeDefinition';
-import { EVENT_NODE_DEFINITIONS } from './EventNode';
-import { CONDITION_NODE_DEFINITIONS } from './ConditionNode';
-import { ACTION_NODE_DEFINITIONS } from './ActionNode';
-import { VARIABLE_NODE_DEFINITIONS } from './VariableNode';
-import { API_REQUEST_NODE_DEFINITIONS } from './APIRequestNode';
-import { NAVIGATE_NODE_DEFINITIONS } from './NavigateNode';
-import { DELAY_NODE_DEFINITIONS } from './DelayNode';
-import { STORAGE_NODE_DEFINITIONS } from './StorageNode';
-import { LOOP_NODE_DEFINITIONS } from './LoopNode';
-import { SWITCH_NODE_DEFINITIONS } from './SwitchNode';
-import { FUNCTION_NODE_DEFINITIONS } from './FunctionNode';
-import { MATH_NODE_DEFINITIONS } from './MathNode';
-import { STRING_NODE_DEFINITIONS } from './StringNode';
-import { DATE_NODE_DEFINITIONS } from './DateNode';
-import { CUSTOM_NODE_DEFINITIONS } from './CustomNode';
-import { DATABASE_NODE_DEFINITIONS } from './DatabaseNode';
-import { AUTH_NODE_DEFINITIONS } from './AuthNode';
-import { ECOMMERCE_NODE_DEFINITIONS } from './EcommerceNode';
-import { COMMUNICATION_NODE_DEFINITIONS } from './CommunicationNode';
-import { FILE_STORAGE_NODE_DEFINITIONS } from './FileStorageNode';
-import { AI_INTEGRATION_NODE_DEFINITIONS } from './AIIntegrationNode';
-import { JSON_DATA_NODE_DEFINITIONS } from './JSONDataNode';
-
-import { SECURITY_NODE_DEFINITIONS } from './SecurityNode';
-import { REALTIME_NODE_DEFINITIONS } from './RealtimeNode';
-import { WORKFLOW_NODE_DEFINITIONS } from './WorkflowNode';
-import { SCHEDULER_NODE_DEFINITIONS } from './SchedulerNode';
-import { TRIGGER_NODE_DEFINITIONS } from './TriggerNode';
-import { DEVICE_NODE_DEFINITIONS } from './DeviceNode';
-import { ANALYTICS_NODE_DEFINITIONS } from './AnalyticsNode';
-import { CLOUD_NODE_DEFINITIONS } from './CloudNode';
-import { DEVTOOLS_NODE_DEFINITIONS } from './DevToolsNode';
-import { UTILITY_NODE_DEFINITIONS } from './UtilityNode';
-
 import type { NodeCategory } from '../graph/LogicNode';
 
-export const ALL_NODE_DEFINITIONS: NodeDefinition[] = [
-  ...EVENT_NODE_DEFINITIONS,
-  ...CONDITION_NODE_DEFINITIONS,
-  ...ACTION_NODE_DEFINITIONS,
-  ...VARIABLE_NODE_DEFINITIONS,
-  ...API_REQUEST_NODE_DEFINITIONS,
-  ...NAVIGATE_NODE_DEFINITIONS,
-  ...DELAY_NODE_DEFINITIONS,
-  ...STORAGE_NODE_DEFINITIONS,
-  ...LOOP_NODE_DEFINITIONS,
-  ...SWITCH_NODE_DEFINITIONS,
-  ...FUNCTION_NODE_DEFINITIONS,
-  ...MATH_NODE_DEFINITIONS,
-  ...STRING_NODE_DEFINITIONS,
-  ...DATE_NODE_DEFINITIONS,
-  ...CUSTOM_NODE_DEFINITIONS,
-  ...DATABASE_NODE_DEFINITIONS,
-  ...AUTH_NODE_DEFINITIONS,
-  ...ECOMMERCE_NODE_DEFINITIONS,
-  ...COMMUNICATION_NODE_DEFINITIONS,
-  ...FILE_STORAGE_NODE_DEFINITIONS,
-  ...AI_INTEGRATION_NODE_DEFINITIONS,
-  ...JSON_DATA_NODE_DEFINITIONS,
+export const START_NODE_DEFINITION: NodeDefinition = {
+  type: 'event_start',
+  category: 'Events',
+  name: 'Start',
+  description: 'Entry point of the flow',
+  icon: 'zap',
+  color: '#f59e0b',
+  inputs: [],
+  outputs: [
+    { id: 'exec', name: 'Then', type: 'execution', dataType: 'execution', color: '#ffffff' },
+  ],
+  defaultConfig: { eventName: 'start' },
+  docs: 'Root trigger point to start the backend execution workflow.',
+};
 
-  ...SECURITY_NODE_DEFINITIONS,
-  ...REALTIME_NODE_DEFINITIONS,
-  ...WORKFLOW_NODE_DEFINITIONS,
-  ...SCHEDULER_NODE_DEFINITIONS,
-  ...TRIGGER_NODE_DEFINITIONS,
-  ...DEVICE_NODE_DEFINITIONS,
-  ...ANALYTICS_NODE_DEFINITIONS,
-  ...CLOUD_NODE_DEFINITIONS,
-  ...DEVTOOLS_NODE_DEFINITIONS,
-  ...UTILITY_NODE_DEFINITIONS,
+export const AUTH_NODE_DEFINITION: NodeDefinition = {
+  type: 'user_login',
+  category: 'Auth',
+  name: 'Authentication',
+  description: 'Login, Signup, Logout',
+  icon: 'shield',
+  color: '#6366f1',
+  inputs: [
+    { id: 'exec', name: 'Exec', type: 'execution', dataType: 'execution', color: '#ffffff' },
+    { id: 'email', name: 'Email', type: 'data', dataType: 'string', color: '#10b981' },
+    { id: 'password', name: 'Password', type: 'data', dataType: 'string', color: '#10b981' },
+  ],
+  outputs: [
+    { id: 'exec', name: 'Then', type: 'execution', dataType: 'execution', color: '#ffffff' },
+    { id: 'user', name: 'User Object', type: 'data', dataType: 'object', color: '#f59e0b' },
+  ],
+  defaultConfig: {
+    mode: 'login',
+    askVerification: true,
+    storeOnDatabase: true,
+    storeOnLocalVariable: false,
+    nextPage: 'Dashboard Screen',
+  },
+  docs: 'Handles user authentication, login verification, signup, and user credential management.',
+};
+
+export const DATABASE_NODE_DEFINITION: NodeDefinition = {
+  type: 'db_query',
+  category: 'Database',
+  name: 'Database',
+  description: 'Store and manage data',
+  icon: 'database',
+  color: '#10b981',
+  inputs: [
+    { id: 'exec', name: 'Exec', type: 'execution', dataType: 'execution', color: '#ffffff' },
+    { id: 'query', name: 'Query / Input', type: 'data', dataType: 'object', color: '#f59e0b' },
+  ],
+  outputs: [
+    { id: 'exec', name: 'Then', type: 'execution', dataType: 'execution', color: '#ffffff' },
+    { id: 'result', name: 'Result Data', type: 'data', dataType: 'object', color: '#10b981' },
+  ],
+  defaultConfig: {
+    dbName: 'User Profile',
+    dbApiUrl: 'https://api.mydb.com/v1',
+    dbType: 'PostgreSQL',
+    isPrivate: true,
+    fields: [
+      { name: 'username', type: 'Text', val: 'Input.username', isPrivate: false },
+      { name: 'email', type: 'Email', val: 'Input.email', isPrivate: false },
+      { name: 'password', type: 'Password', val: 'Input.password', isPrivate: true },
+      { name: 'age', type: 'Integer', val: '18', isPrivate: false },
+    ],
+    storeLocalVar: true,
+    varName: 'userData',
+    nextPage: 'Dashboard Screen',
+  },
+  docs: 'Performs database storage operations, custom queries, schema field management, and local variable mapping.',
+};
+
+export const ALL_NODE_DEFINITIONS: NodeDefinition[] = [
+  START_NODE_DEFINITION,
+  AUTH_NODE_DEFINITION,
+  DATABASE_NODE_DEFINITION,
 ];
 
-export const NODE_DEFINITIONS_BY_TYPE: Map<string, NodeDefinition> = new Map(
-  ALL_NODE_DEFINITIONS.map((def) => [def.type, def])
-);
+export const NODE_DEFINITIONS_BY_TYPE: Map<string, NodeDefinition> = new Map([
+  [START_NODE_DEFINITION.type, START_NODE_DEFINITION],
+  ['event_app_started', START_NODE_DEFINITION],
+  ['app_started', START_NODE_DEFINITION],
+  ['start', START_NODE_DEFINITION],
 
-export const NODE_DEFINITIONS_BY_CATEGORY: Map<NodeCategory, NodeDefinition[]> = new Map();
-for (const def of ALL_NODE_DEFINITIONS) {
-  const existing = NODE_DEFINITIONS_BY_CATEGORY.get(def.category) ?? [];
-  existing.push(def);
-  NODE_DEFINITIONS_BY_CATEGORY.set(def.category, existing);
-}
+  [AUTH_NODE_DEFINITION.type, AUTH_NODE_DEFINITION],
+  ['auth', AUTH_NODE_DEFINITION],
+  ['auth_flow', AUTH_NODE_DEFINITION],
+  ['user_signup', AUTH_NODE_DEFINITION],
+
+  [DATABASE_NODE_DEFINITION.type, DATABASE_NODE_DEFINITION],
+  ['database', DATABASE_NODE_DEFINITION],
+  ['db', DATABASE_NODE_DEFINITION],
+  ['db_create', DATABASE_NODE_DEFINITION],
+]);
+
+export const NODE_DEFINITIONS_BY_CATEGORY: Map<NodeCategory, NodeDefinition[]> = new Map([
+  ['Events', [START_NODE_DEFINITION]],
+  ['Auth', [AUTH_NODE_DEFINITION]],
+  ['Database', [DATABASE_NODE_DEFINITION]],
+]);
 
 export function getNodeDefinition(type: string): NodeDefinition | undefined {
-  return NODE_DEFINITIONS_BY_TYPE.get(type);
+  if (NODE_DEFINITIONS_BY_TYPE.has(type)) {
+    return NODE_DEFINITIONS_BY_TYPE.get(type);
+  }
+  const lower = type.toLowerCase();
+  if (lower.includes('auth') || lower.includes('login') || lower.includes('signup')) {
+    return AUTH_NODE_DEFINITION;
+  }
+  if (lower.includes('db') || lower.includes('database') || lower.includes('data')) {
+    return DATABASE_NODE_DEFINITION;
+  }
+  if (lower.includes('event') || lower.includes('start') || lower.includes('app')) {
+    return START_NODE_DEFINITION;
+  }
+  return START_NODE_DEFINITION;
 }
 
 export function getNodesByCategory(category: NodeCategory): NodeDefinition[] {
@@ -105,28 +140,6 @@ export function searchNodes(query: string): NodeDefinition[] {
 
 export const NODE_CATEGORIES: NodeCategory[] = [
   'Events',
-  'Logic',
-  'Variables',
-  'Math',
-  'String',
-  'Date',
-  'API',
-  'Database',
   'Auth',
-  'E-Commerce',
-  'Communication',
-  'Navigation',
-  'Storage',
-  'Security',
-  'Realtime',
-  'Device',
-  'Workflow',
-  'Scheduler',
-  'Triggers',
-  'Analytics',
-  'Cloud',
-  'DevTools',
-  'Utilities',
-  'Functions',
-  'Custom',
+  'Database',
 ];

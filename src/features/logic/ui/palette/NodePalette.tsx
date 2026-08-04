@@ -265,7 +265,8 @@ export const NodePalette: React.FC = () => {
           {/* Nodes List */}
           <div className="flex-1 overflow-y-auto p-2.5 space-y-2 custom-scrollbar">
             {filteredNodes.map((def) => {
-              const IconComp = (Icons as unknown as Record<string, React.FC<{ size?: number }>>)[def.icon] || Icons.Code;
+              const iconKey = def.icon ? def.icon.charAt(0).toUpperCase() + def.icon.slice(1) : 'Code';
+              const IconComp = (Icons as unknown as Record<string, React.FC<{ size?: number }>>)[def.icon] || (Icons as unknown as Record<string, React.FC<{ size?: number }>>)[iconKey] || Icons.Code;
 
               return (
                 <div
