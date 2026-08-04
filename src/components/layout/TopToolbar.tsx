@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users, Layout, MessageSquare, History, Palette, Package } from 'lucide-react';
+import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users, Layout, MessageSquare, History, Palette, Package, Image, Smile, Sliders } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useHistoryStore } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
@@ -17,7 +17,10 @@ import { VersionHistoryModal } from '../collaboration/VersionHistoryModal';
 import { TemplateManagerModal } from '../templates/TemplateManagerModal';
 import { DesignSystemModal } from '../designsystem/DesignSystemModal';
 import { PluginMarketplaceModal } from '../marketplace/PluginMarketplaceModal';
+import { AssetMarketplaceModal } from '../assets/AssetMarketplaceModal';
+import { IconPickerModal } from '../icons/IconPickerModal';
 import { collaborationManager } from '../../collaboration/CollaborationManager';
+import { workspaceLayoutManager, WORKSPACE_PRESETS } from '../../workspace/WorkspaceLayoutManager';
 import { i18nEngine } from '../../i18n/I18nEngine';
 
 export const TopToolbar: React.FC = () => {
@@ -26,6 +29,7 @@ export const TopToolbar: React.FC = () => {
   const { selectedComponentIds } = useSelectionStore();
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [, setLangState] = useState(i18nEngine.getCurrentLanguage());
+  const [currentPreset, setCurrentPreset] = useState(workspaceLayoutManager.getActiveProfile().id);
 
   // Modals state
   const [isCodeInspectorOpen, setIsCodeInspectorOpen] = useState(false);
@@ -37,13 +41,25 @@ export const TopToolbar: React.FC = () => {
   const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = useState(false);
   const [isDesignTokensOpen, setIsDesignTokensOpen] = useState(false);
   const [isPluginMarketplaceOpen, setIsPluginMarketplaceOpen] = useState(false);
+  const [isAssetMarketplaceOpen, setIsAssetMarketplaceOpen] = useState(false);
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
   useEffect(() => {
-    const unsub = i18nEngine.subscribe((lang) => setLangState(lang));
-    return () => unsub();
+    const unsubI18n = i18nEngine.subscribe((lang) => setLangState(lang));
+    const unsubWk = workspaceLayoutManager.subscribe(() => setCurrentPreset(workspaceLayoutManager.getActiveProfile().id));
+    return () => {
+      unsubI18n();
+      unsubWk();
+    };
   }, []);
 
   const activeSessions = collaborationManager.sessions.getActiveSessions();
+
+  const handlePresetSelect = (presetId: string) => {
+    workspaceLayoutManager.applyPreset(presetId);
+    setCurrentPreset(presetId);
+    notificationService.success(`Applied ${WORKSPACE_PRESETS.find((p) => p.id === presetId)?.name}!`);
+  };
 
   const handleSave = () => {
     notificationService.success(i18nEngine.t('save', 'Save') + ' (.vstack format saved)');
@@ -74,6 +90,8 @@ export const TopToolbar: React.FC = () => {
       <TemplateManagerModal isOpen={isTemplateGalleryOpen} onClose={() => setIsTemplateGalleryOpen(false)} />
       <DesignSystemModal isOpen={isDesignTokensOpen} onClose={() => setIsDesignTokensOpen(false)} />
       <PluginMarketplaceModal isOpen={isPluginMarketplaceOpen} onClose={() => setIsPluginMarketplaceOpen(false)} />
+      <AssetMarketplaceModal isOpen={isAssetMarketplaceOpen} onClose={() => setIsAssetMarketplaceOpen(false)} />
+      <IconPickerModal isOpen={isIconPickerOpen} onClose={() => setIsIconPickerOpen(false)} />
 
       <div className="h-9 bg-[#0e0f12] border-b border-[#232733] flex items-center justify-between px-3 text-xs text-gray-300 select-none z-20">
         {/* Left: Branding & Project Title */}
@@ -91,7 +109,7 @@ export const TopToolbar: React.FC = () => {
           )}
         </div>
 
-        {/* Center: History Controls, Device Preview Switcher & Modals Triggers */}
+        {/* Center: History Controls, Device Preview Switcher & Layout Presets */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5 border-r border-[#232733] pr-2">
             <Button variant="ghost" size="icon" disabled={!canUndo} onClick={() => commandManager.undo()} title="Undo (Ctrl+Z)">
@@ -126,7 +144,23 @@ export const TopToolbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Enterprise Modal Action Triggers */}
+          {/* Workspace Layout Selector Dropdown */}
+          <div className="flex items-center gap-1 bg-[#14161b] px-2 py-1 rounded border border-[#232733]">
+            <Sliders size={12} className="text-gray-400" />
+            <select
+              value={currentPreset}
+              onChange={(e) => handlePresetSelect(e.target.value)}
+              className="bg-transparent text-[11px] font-medium text-gray-200 outline-none cursor-pointer"
+            >
+              {WORKSPACE_PRESETS.map((p) => (
+                <option key={p.id} value={p.id} className="bg-[#14161b] text-gray-200">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action Modals */}
           <button
             onClick={() => setIsTemplateGalleryOpen(true)}
             className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-indigo-400 border border-[#232733] rounded text-xs font-semibold"
@@ -134,6 +168,24 @@ export const TopToolbar: React.FC = () => {
           >
             <Layout size={13} />
             <span>{i18nEngine.t('templates', 'Templates')}</span>
+          </button>
+
+          <button
+            onClick={() => setIsAssetMarketplaceOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-emerald-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open Asset & Lottie Media Marketplace"
+          >
+            <Image size={13} />
+            <span>Assets</span>
+          </button>
+
+          <button
+            onClick={() => setIsIconPickerOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-purple-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open Vector Icon Library (20,000+ Icons)"
+          >
+            <Smile size={13} />
+            <span>Icons</span>
           </button>
 
           <button
