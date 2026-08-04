@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users, Layout, MessageSquare, History, Palette, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -18,12 +18,14 @@ import { TemplateManagerModal } from '../templates/TemplateManagerModal';
 import { DesignSystemModal } from '../designsystem/DesignSystemModal';
 import { PluginMarketplaceModal } from '../marketplace/PluginMarketplaceModal';
 import { collaborationManager } from '../../collaboration/CollaborationManager';
+import { i18nEngine } from '../../i18n/I18nEngine';
 
 export const TopToolbar: React.FC = () => {
   const navigate = useNavigate();
   const { canUndo, canRedo } = useHistoryStore();
   const { selectedComponentIds } = useSelectionStore();
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [, setLangState] = useState(i18nEngine.getCurrentLanguage());
 
   // Modals state
   const [isCodeInspectorOpen, setIsCodeInspectorOpen] = useState(false);
@@ -36,10 +38,15 @@ export const TopToolbar: React.FC = () => {
   const [isDesignTokensOpen, setIsDesignTokensOpen] = useState(false);
   const [isPluginMarketplaceOpen, setIsPluginMarketplaceOpen] = useState(false);
 
+  useEffect(() => {
+    const unsub = i18nEngine.subscribe((lang) => setLangState(lang));
+    return () => unsub();
+  }, []);
+
   const activeSessions = collaborationManager.sessions.getActiveSessions();
 
   const handleSave = () => {
-    notificationService.success('Project saved (.vstack format)');
+    notificationService.success(i18nEngine.t('save', 'Save') + ' (.vstack format saved)');
   };
 
   const handleExport = () => {
@@ -73,7 +80,7 @@ export const TopToolbar: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 font-bold text-indigo-400">
             <Layers size={16} />
-            <span>VisualStack Studio</span>
+            <span>{i18nEngine.t('app_title', 'VisualStack Studio')}</span>
           </div>
           <span className="text-gray-600">|</span>
           <span className="text-gray-200 font-medium truncate max-w-[140px]">My Application</span>
@@ -126,7 +133,7 @@ export const TopToolbar: React.FC = () => {
             title="Open 16+ Project Template Gallery"
           >
             <Layout size={13} />
-            <span>Templates</span>
+            <span>{i18nEngine.t('templates', 'Templates')}</span>
           </button>
 
           <button
@@ -135,7 +142,7 @@ export const TopToolbar: React.FC = () => {
             title="Open Threaded Comments Drawer"
           >
             <MessageSquare size={13} />
-            <span>Comments</span>
+            <span>{i18nEngine.t('comments', 'Comments')}</span>
           </button>
 
           <button
@@ -144,7 +151,7 @@ export const TopToolbar: React.FC = () => {
             title="Open Version History Checkpoint Timeline"
           >
             <History size={13} />
-            <span>Checkpoints</span>
+            <span>{i18nEngine.t('checkpoints', 'Checkpoints')}</span>
           </button>
 
           <button
@@ -153,7 +160,7 @@ export const TopToolbar: React.FC = () => {
             title="Open Design System Tokens Editor"
           >
             <Palette size={13} />
-            <span>Tokens</span>
+            <span>{i18nEngine.t('tokens', 'Tokens')}</span>
           </button>
 
           <button
@@ -162,7 +169,7 @@ export const TopToolbar: React.FC = () => {
             title="Open VisualStack Plugin Marketplace"
           >
             <Package size={13} />
-            <span>Plugins</span>
+            <span>{i18nEngine.t('plugins', 'Plugins')}</span>
           </button>
 
           <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-[#14161b] px-2 py-0.5 rounded border border-[#232733]">
@@ -179,7 +186,7 @@ export const TopToolbar: React.FC = () => {
             title="Team Collaboration & Share Project"
           >
             <Users size={13} />
-            <span>Share ({activeSessions.length})</span>
+            <span>{i18nEngine.t('share', 'Share')} ({activeSessions.length})</span>
           </button>
 
           <Button
@@ -201,18 +208,18 @@ export const TopToolbar: React.FC = () => {
             title="Open AI Assistant Chat"
           >
             <Sparkles size={13} />
-            <span>AI Copilot</span>
+            <span>{i18nEngine.t('ai_copilot', 'AI Copilot')}</span>
           </Button>
 
           <span className="text-gray-600">|</span>
 
           <Button variant="ghost" size="sm" onClick={handleSave} className="gap-1 text-xs">
             <Save size={13} />
-            <span>Save</span>
+            <span>{i18nEngine.t('save', 'Save')}</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setIsCodeInspectorOpen(true)} className="gap-1 text-xs text-indigo-400">
             <Code2 size={13} />
-            <span>View Code</span>
+            <span>{i18nEngine.t('view_code', 'View Code')}</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={handleExport} className="gap-1 text-xs">
             <Download size={13} />
@@ -221,11 +228,11 @@ export const TopToolbar: React.FC = () => {
           <span className="text-gray-600">|</span>
           <Button variant="secondary" size="sm" onClick={handleRun} className="gap-1.5 text-xs">
             <Play size={12} className="text-emerald-400 fill-emerald-400" />
-            <span>Run</span>
+            <span>{i18nEngine.t('run', 'Run')}</span>
           </Button>
           <Button variant="default" size="sm" onClick={handleDeploy} className="gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white">
             <Rocket size={12} />
-            <span>Deploy</span>
+            <span>{i18nEngine.t('deploy', 'Deploy')}</span>
           </Button>
         </div>
       </div>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Palette, Key, Shield, Globe, Cpu, Sparkles, Code2, CheckCircle2 } from 'lucide-react';
 import { designSystemManager, THEME_PRESETS, type DesignTokens } from '../designsystem/DesignSystemManager';
 import { licenseManager, type LicenseInfo, type LicenseTier } from '../enterprise/LicenseManager';
 import { i18nEngine, SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n/I18nEngine';
+import { aiSettingsManager, type AIProvider } from '../ai/AISettingsManager';
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'license' | 'editor' | 'theme' | 'ai' | 'devops' | 'i18n'>('license');
@@ -27,17 +28,23 @@ export const SettingsPage: React.FC = () => {
   const [currencySymbol, setCurrencySymbol] = useState('$');
   const [enableRtl, setEnableRtl] = useState(false);
 
-  // AI Keys State
-  const [openaiKey, setOpenaiKey] = useState('sk-proj-********************************');
-  const [anthropicKey, setAnthropicKey] = useState('sk-ant-********************************');
-  const [geminiKey, setGeminiKey] = useState('AIzaSy********************************');
-  const [ollamaHost, setOllamaHost] = useState('http://localhost:11434');
+  // AI Keys State (Backed by AISettingsManager & LocalStorage)
+  const [aiConfig, setAiConfig] = useState(aiSettingsManager.getConfig());
 
   // DevOps State
   const [gitName, setGitName] = useState('Developer');
   const [gitEmail, setGitEmail] = useState('dev@visualstack.io');
   const [buildDir, setBuildDir] = useState('./dist');
   const [dockerSocket, setDockerSocket] = useState('//./pipe/docker_engine');
+
+  useEffect(() => {
+    const unsubI18n = i18nEngine.subscribe((lang) => setCurrentLang(lang));
+    const unsubAi = aiSettingsManager.subscribe((cfg) => setAiConfig(cfg));
+    return () => {
+      unsubI18n();
+      unsubAi();
+    };
+  }, []);
 
   const handleColorChange = (key: string, val: string) => {
     designSystemManager.updateColorToken(key, val);
@@ -55,9 +62,16 @@ export const SettingsPage: React.FC = () => {
     i18nEngine.setLanguage(lang);
     setCurrentLang(lang);
     const pack = SUPPORTED_LANGUAGES.find((l) => l.code === lang);
-    if (pack?.isRtl) {
-      setEnableRtl(true);
-    }
+    setEnableRtl(!!pack?.isRtl);
+    setPurchaseToast(`Interface language switched to ${pack?.name}!`);
+    setTimeout(() => setPurchaseToast(null), 2500);
+  };
+
+  const handleAiUpdate = (partial: Parameters<typeof aiSettingsManager.updateConfig>[0]) => {
+    aiSettingsManager.updateConfig(partial);
+    setAiConfig(aiSettingsManager.getConfig());
+    setPurchaseToast('AI Model & Provider API Settings Saved!');
+    setTimeout(() => setPurchaseToast(null), 2500);
   };
 
   const handlePurchasePlan = (tier: LicenseTier) => {
@@ -89,7 +103,7 @@ export const SettingsPage: React.FC = () => {
             <Settings size={26} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-100 tracking-tight">VisualStack Enterprise IDE Settings & License Suite</h1>
+            <h1 className="text-lg font-bold text-gray-100 tracking-tight">{i18nEngine.t('settings', 'Settings')} - VisualStack Enterprise IDE Suite</h1>
             <p className="text-xs text-gray-400">Configure editor keybindings, license subscriptions, design tokens & compiler pipelines</p>
           </div>
         </div>
@@ -118,9 +132,9 @@ export const SettingsPage: React.FC = () => {
             { id: 'license', label: 'License & Subscriptions', desc: 'Manage & purchase software tier', icon: Key, badge: license.tier },
             { id: 'editor', label: 'Editor & Keybindings', desc: 'Monaco font, tab size & shortcuts', icon: Code2 },
             { id: 'theme', label: 'Design Tokens & Theme', desc: '16 color tokens & 5 theme presets', icon: Palette },
-            { id: 'ai', label: 'AI Models & API Keys', desc: 'OpenAI, Anthropic & local Ollama', icon: Sparkles },
+            { id: 'ai', label: 'AI Models & API Keys', desc: `Active: ${aiConfig.activeProvider.toUpperCase()}`, icon: Sparkles },
             { id: 'devops', label: 'DevOps & Compiler', desc: 'Docker socket, Git & build targets', icon: Cpu },
-            { id: 'i18n', label: 'Language & Localization', desc: '20 languages, RTL & currency formats', icon: Globe },
+            { id: 'i18n', label: 'Language & Localization', desc: `Selected: ${currentLang.toUpperCase()}`, icon: Globe },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -153,7 +167,6 @@ export const SettingsPage: React.FC = () => {
             {/* 1. LICENSE & SUBSCRIPTION PURCHASE PANEL */}
             {activeTab === 'license' && (
               <div className="space-y-8">
-                {/* Active License Header Card */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl flex items-center justify-between shadow-xl relative overflow-hidden">
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
@@ -180,7 +193,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Pricing Plans Grid */}
                 <div>
                   <div className="mb-6">
                     <h3 className="text-base font-bold text-gray-100">Purchase Software License & Upgrade Tier</h3>
@@ -188,7 +200,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-3 gap-6">
-                    {/* Community Plan */}
                     <div className="bg-[#14161b] border border-[#232733] rounded-3xl p-6 flex flex-col justify-between space-y-6 hover:border-gray-600 transition-all shadow-lg">
                       <div>
                         <div className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider mb-2">Community Free</div>
@@ -212,7 +223,6 @@ export const SettingsPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Professional Plan */}
                     <div className="bg-[#14161b] border-2 border-indigo-500 rounded-3xl p-6 flex flex-col justify-between space-y-6 shadow-2xl relative">
                       <span className="absolute -top-3 right-6 px-3.5 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-md">
                         Recommended
@@ -239,7 +249,6 @@ export const SettingsPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Enterprise Plan */}
                     <div className="bg-[#14161b] border border-[#232733] rounded-3xl p-6 flex flex-col justify-between space-y-6 hover:border-amber-500/50 transition-all shadow-lg">
                       <div>
                         <div className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider mb-2">Enterprise Edition</div>
@@ -265,7 +274,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Instant License Key Activation Box */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-4 shadow-md">
                   <div className="flex items-center gap-2">
                     <Key size={18} className="text-indigo-400" />
@@ -369,7 +377,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Keyboard Shortcuts Table */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-4">
                   <h4 className="text-xs font-bold text-gray-200 uppercase tracking-wider">Default IDE Keyboard Shortcuts</h4>
 
@@ -400,7 +407,6 @@ export const SettingsPage: React.FC = () => {
                   <p className="text-xs text-gray-400">16 color tokens, theme presets (Dracula, Tokyo Night, Catppuccin, Cyberpunk), font scales & border radius</p>
                 </div>
 
-                {/* Theme Preset Selector Bar */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-4">
                   <h4 className="text-xs font-bold text-gray-200 uppercase tracking-wider">Quick Theme Presets</h4>
                   <div className="grid grid-cols-5 gap-4 text-xs">
@@ -423,7 +429,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 16 Color Tokens Grid */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-4">
                   <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">All 16 Theme Color Tokens</h4>
                   <div className="grid grid-cols-4 gap-4">
@@ -454,49 +459,83 @@ export const SettingsPage: React.FC = () => {
               <div className="space-y-8">
                 <div>
                   <h3 className="text-base font-bold text-gray-100 mb-1">AI Providers & LLM API Keys</h3>
-                  <p className="text-xs text-gray-400">Configure cloud AI service tokens or local Ollama GPU endpoints</p>
+                  <p className="text-xs text-gray-400">Configure cloud AI service tokens or local Ollama GPU endpoints. Changes save live to LocalStorage.</p>
+                </div>
+
+                {/* Active Provider Selector Bar */}
+                <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-3">
+                  <label className="block font-bold text-gray-200 text-xs uppercase tracking-wider">Default AI Provider Engine</label>
+                  <div className="grid grid-cols-4 gap-4">
+                    {[
+                      { id: 'openai', label: 'OpenAI (GPT-4o)' },
+                      { id: 'anthropic', label: 'Anthropic (Claude 3.5)' },
+                      { id: 'gemini', label: 'Google Gemini (1.5 Pro)' },
+                      { id: 'ollama', label: 'Ollama (Local GPU)' },
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => handleAiUpdate({ activeProvider: p.id as AIProvider })}
+                        className={`p-3.5 rounded-xl border text-xs font-bold transition-all ${
+                          aiConfig.activeProvider === p.id
+                            ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                            : 'bg-[#0e0f12] text-gray-400 border-[#232733] hover:text-gray-200'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 text-xs">
                   {/* OpenAI */}
                   <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="font-bold text-gray-100">OpenAI (GPT-4o, GPT-4o-mini)</div>
-                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-mono">ACTIVE</span>
+                      <div className="font-bold text-gray-100">OpenAI API Key</div>
+                      {aiConfig.activeProvider === 'openai' && (
+                        <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-[10px] font-mono font-bold">ACTIVE DEFAULT</span>
+                      )}
                     </div>
                     <input
                       type="password"
-                      value={openaiKey}
-                      onChange={(e) => setOpenaiKey(e.target.value)}
-                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-gray-300"
+                      value={aiConfig.openaiKey}
+                      onChange={(e) => handleAiUpdate({ openaiKey: e.target.value })}
+                      placeholder="sk-proj-..."
+                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-gray-300 focus:border-indigo-500 outline-none"
                     />
                   </div>
 
                   {/* Anthropic */}
                   <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="font-bold text-gray-100">Anthropic (Claude 3.5 Sonnet)</div>
-                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-mono">ACTIVE</span>
+                      <div className="font-bold text-gray-100">Anthropic API Key</div>
+                      {aiConfig.activeProvider === 'anthropic' && (
+                        <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-[10px] font-mono font-bold">ACTIVE DEFAULT</span>
+                      )}
                     </div>
                     <input
                       type="password"
-                      value={anthropicKey}
-                      onChange={(e) => setAnthropicKey(e.target.value)}
-                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-gray-300"
+                      value={aiConfig.anthropicKey}
+                      onChange={(e) => handleAiUpdate({ anthropicKey: e.target.value })}
+                      placeholder="sk-ant-..."
+                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-gray-300 focus:border-indigo-500 outline-none"
                     />
                   </div>
 
                   {/* Google Gemini */}
                   <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="font-bold text-gray-100">Google Gemini (Gemini 1.5 Pro)</div>
-                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-mono">ACTIVE</span>
+                      <div className="font-bold text-gray-100">Google Gemini API Key</div>
+                      {aiConfig.activeProvider === 'gemini' && (
+                        <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-[10px] font-mono font-bold">ACTIVE DEFAULT</span>
+                      )}
                     </div>
                     <input
                       type="password"
-                      value={geminiKey}
-                      onChange={(e) => setGeminiKey(e.target.value)}
-                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-gray-300"
+                      value={aiConfig.geminiKey}
+                      onChange={(e) => handleAiUpdate({ geminiKey: e.target.value })}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-gray-300 focus:border-indigo-500 outline-none"
                     />
                   </div>
 
@@ -504,13 +543,16 @@ export const SettingsPage: React.FC = () => {
                   <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="font-bold text-gray-100">Ollama Local GPU Host</div>
-                      <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-[10px] font-mono">LOCAL FREE</span>
+                      {aiConfig.activeProvider === 'ollama' && (
+                        <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-[10px] font-mono font-bold">ACTIVE DEFAULT</span>
+                      )}
                     </div>
                     <input
                       type="text"
-                      value={ollamaHost}
-                      onChange={(e) => setOllamaHost(e.target.value)}
-                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-indigo-400"
+                      value={aiConfig.ollamaHost}
+                      onChange={(e) => handleAiUpdate({ ollamaHost: e.target.value })}
+                      placeholder="http://localhost:11434"
+                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-indigo-400 focus:border-indigo-500 outline-none"
                     />
                   </div>
                 </div>
@@ -577,7 +619,6 @@ export const SettingsPage: React.FC = () => {
                   <p className="text-xs text-gray-400">Select from 20 supported language packs, RTL layouts, date formats, and currency units</p>
                 </div>
 
-                {/* Regional Preferences Bar */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl grid grid-cols-3 gap-6 text-xs text-gray-300">
                   <div className="space-y-2">
                     <label className="font-bold text-gray-200">Date Format</label>
@@ -619,7 +660,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 20 Languages Grid */}
                 <div className="grid grid-cols-4 gap-4 text-xs">
                   {SUPPORTED_LANGUAGES.map((l) => (
                     <button
