@@ -1,24 +1,61 @@
-export type SupportedLanguage = 'en' | 'hi' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'ar';
+export type SupportedLanguage =
+  | 'en'
+  | 'en-gb'
+  | 'hi'
+  | 'es'
+  | 'fr'
+  | 'de'
+  | 'ja'
+  | 'zh-cn'
+  | 'zh-tw'
+  | 'ar'
+  | 'pt'
+  | 'ru'
+  | 'it'
+  | 'ko'
+  | 'nl'
+  | 'pl'
+  | 'tr'
+  | 'vi'
+  | 'th'
+  | 'id';
+
+export interface LanguagePack {
+  code: SupportedLanguage;
+  name: string;
+  nativeName: string;
+  flag: string;
+  isRtl?: boolean;
+}
+
+export const SUPPORTED_LANGUAGES: LanguagePack[] = [
+  { code: 'en', name: 'English (US)', nativeName: 'English (US)', flag: '🇺🇸' },
+  { code: 'en-gb', name: 'English (UK)', nativeName: 'English (UK)', flag: '🇬🇧' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिंदी (भारत)', flag: '🇮🇳' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español (España)', flag: '🇪🇸' },
+  { code: 'fr', name: 'French', nativeName: 'Français (France)', flag: '🇫🇷' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch (Deutschland)', flag: '🇩🇪' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語 (日本)', flag: '🇯🇵' },
+  { code: 'zh-cn', name: 'Chinese Simplified', nativeName: '简体中文 (中国)', flag: '🇨🇳' },
+  { code: 'zh-tw', name: 'Chinese Traditional', nativeName: '繁體中文 (台灣)', flag: '🇹🇼' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية (السعودية)', flag: '🇸🇦', isRtl: true },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português (Brasil)', flag: '🇧🇷' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский (Россия)', flag: '🇷🇺' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano (Italia)', flag: '🇮🇹' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어 (대한민국)', flag: '🇰🇷' },
+  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands (Nederland)', flag: '🇳🇱' },
+  { code: 'pl', name: 'Polish', nativeName: 'Polski (Polska)', flag: '🇵🇱' },
+  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe (Türkiye)', flag: '🇹🇷' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt (Việt Nam)', flag: '🇻🇳' },
+  { code: 'th', name: 'Thai', nativeName: 'ไทย (ประเทศไทย)', flag: '🇹🇭' },
+  { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩' },
+];
 
 export class I18nEngine {
   private currentLang: SupportedLanguage = 'en';
-  private translations: Record<SupportedLanguage, Record<string, string>> = {
-    en: { appTitle: 'VisualStack Studio', save: 'Save', deploy: 'Deploy', run: 'Run', aiCopilot: 'AI Copilot' },
-    hi: { appTitle: 'विज़ुअलस्टैक स्टूडियो', save: 'सहेजे', deploy: 'तैनाेत करें', run: 'चलाएं', aiCopilot: 'एआई सहायक' },
-    es: { appTitle: 'VisualStack Studio', save: 'Guardar', deploy: 'Desplegar', run: 'Ejecutar', aiCopilot: 'Copiloto IA' },
-    fr: { appTitle: 'VisualStack Studio', save: 'Enregistrer', deploy: 'Déployer', run: 'Exécuter', aiCopilot: 'Copilote IA' },
-    de: { appTitle: 'VisualStack Studio', save: 'Speichern', deploy: 'Bereitstellen', run: 'Ausführen', aiCopilot: 'KI-Assistent' },
-    ja: { appTitle: 'VisualStack Studio', save: '保存', deploy: 'デプロイ', run: '実行', aiCopilot: 'AIコパイロット' },
-    zh: { appTitle: 'VisualStack Studio', save: '保存', deploy: '部署', run: '运行', aiCopilot: 'AI 助手' },
-    ar: { appTitle: 'فيجوال ستاك ستوديو', save: 'حفظ', deploy: 'نشر', run: 'تشغيل', aiCopilot: 'مساعد الذكاء الاصطناعي' },
-  };
 
   public setLanguage(lang: SupportedLanguage): void {
     this.currentLang = lang;
-  }
-
-  public t(key: string): string {
-    return this.translations[this.currentLang]?.[key] || this.translations.en[key] || key;
   }
 
   public getCurrentLanguage(): SupportedLanguage {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Settings, Palette, Key, Shield, Globe, Cpu, Sparkles, Code2, CheckCircle2 } from 'lucide-react';
-import { designSystemManager, type DesignTokens } from '../designsystem/DesignSystemManager';
+import { designSystemManager, THEME_PRESETS, type DesignTokens } from '../designsystem/DesignSystemManager';
 import { licenseManager, type LicenseInfo, type LicenseTier } from '../enterprise/LicenseManager';
-import { i18nEngine, type SupportedLanguage } from '../i18n/I18nEngine';
+import { i18nEngine, SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n/I18nEngine';
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'license' | 'editor' | 'theme' | 'ai' | 'devops' | 'i18n'>('license');
@@ -22,6 +22,11 @@ export const SettingsPage: React.FC = () => {
   const [wordWrap, setWordWrap] = useState(true);
   const [cursorBlinking, setCursorBlinking] = useState('smooth');
 
+  // i18n Format Options State
+  const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
+  const [currencySymbol, setCurrencySymbol] = useState('$');
+  const [enableRtl, setEnableRtl] = useState(false);
+
   // AI Keys State
   const [openaiKey, setOpenaiKey] = useState('sk-proj-********************************');
   const [anthropicKey, setAnthropicKey] = useState('sk-ant-********************************');
@@ -39,9 +44,20 @@ export const SettingsPage: React.FC = () => {
     setTokens(designSystemManager.getTokens());
   };
 
+  const handlePresetApply = (presetId: string) => {
+    designSystemManager.applyPreset(presetId);
+    setTokens(designSystemManager.getTokens());
+    setPurchaseToast(`Applied ${THEME_PRESETS.find(p => p.id === presetId)?.name} Preset!`);
+    setTimeout(() => setPurchaseToast(null), 2500);
+  };
+
   const handleLangChange = (lang: SupportedLanguage) => {
     i18nEngine.setLanguage(lang);
     setCurrentLang(lang);
+    const pack = SUPPORTED_LANGUAGES.find((l) => l.code === lang);
+    if (pack?.isRtl) {
+      setEnableRtl(true);
+    }
   };
 
   const handlePurchasePlan = (tier: LicenseTier) => {
@@ -101,10 +117,10 @@ export const SettingsPage: React.FC = () => {
           {[
             { id: 'license', label: 'License & Subscriptions', desc: 'Manage & purchase software tier', icon: Key, badge: license.tier },
             { id: 'editor', label: 'Editor & Keybindings', desc: 'Monaco font, tab size & shortcuts', icon: Code2 },
-            { id: 'theme', label: 'Design Tokens & Theme', desc: 'Brand colors, typography & radius', icon: Palette },
+            { id: 'theme', label: 'Design Tokens & Theme', desc: '16 color tokens & 5 theme presets', icon: Palette },
             { id: 'ai', label: 'AI Models & API Keys', desc: 'OpenAI, Anthropic & local Ollama', icon: Sparkles },
             { id: 'devops', label: 'DevOps & Compiler', desc: 'Docker socket, Git & build targets', icon: Cpu },
-            { id: 'i18n', label: 'Language & i18n', desc: 'Multi-language studio localization', icon: Globe },
+            { id: 'i18n', label: 'Language & Localization', desc: '20 languages, RTL & currency formats', icon: Globe },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -380,17 +396,41 @@ export const SettingsPage: React.FC = () => {
             {activeTab === 'theme' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-base font-bold text-gray-100 mb-1">Global Design System Tokens</h3>
-                  <p className="text-xs text-gray-400">Modify global color tokens, typography styles, border radius scales & shadows</p>
+                  <h3 className="text-base font-bold text-gray-100 mb-1">Global Design System Tokens & Theme Presets</h3>
+                  <p className="text-xs text-gray-400">16 color tokens, theme presets (Dracula, Tokyo Night, Catppuccin, Cyberpunk), font scales & border radius</p>
                 </div>
 
+                {/* Theme Preset Selector Bar */}
                 <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-4">
-                  <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Brand Palette Tokens</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <h4 className="text-xs font-bold text-gray-200 uppercase tracking-wider">Quick Theme Presets</h4>
+                  <div className="grid grid-cols-5 gap-4 text-xs">
+                    {THEME_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => handlePresetApply(preset.id)}
+                        className="p-4 bg-[#0e0f12] border border-[#232733] hover:border-indigo-500 rounded-2xl flex flex-col justify-between space-y-3 group transition-all"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <div style={{ backgroundColor: preset.colors.primary }} className="w-4 h-4 rounded-full" />
+                          <div style={{ backgroundColor: preset.colors.secondary }} className="w-4 h-4 rounded-full" />
+                          <div style={{ backgroundColor: preset.colors.accent }} className="w-4 h-4 rounded-full" />
+                        </div>
+                        <div className="text-xs font-bold text-gray-200 group-hover:text-indigo-400 transition-colors text-left">
+                          {preset.name}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 16 Color Tokens Grid */}
+                <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl space-y-4">
+                  <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">All 16 Theme Color Tokens</h4>
+                  <div className="grid grid-cols-4 gap-4">
                     {Object.entries(tokens.colors).map(([k, v]) => (
                       <div key={k} className="p-4 bg-[#0e0f12] border border-[#232733] rounded-2xl flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div style={{ backgroundColor: v }} className="w-8 h-8 rounded-xl border border-gray-700 shadow-md shrink-0" />
+                          <div style={{ backgroundColor: v }} className="w-7 h-7 rounded-xl border border-gray-700 shadow-md shrink-0" />
                           <div>
                             <div className="text-xs font-bold text-gray-200 capitalize">{k}</div>
                             <div className="text-[10px] font-mono text-gray-500">{v}</div>
@@ -400,7 +440,7 @@ export const SettingsPage: React.FC = () => {
                           type="color"
                           value={v}
                           onChange={(e) => handleColorChange(k, e.target.value)}
-                          className="w-8 h-8 rounded border-none bg-transparent cursor-pointer"
+                          className="w-7 h-7 rounded border-none bg-transparent cursor-pointer"
                         />
                       </div>
                     ))}
@@ -531,36 +571,75 @@ export const SettingsPage: React.FC = () => {
 
             {/* 6. LANGUAGE & I18N */}
             {activeTab === 'i18n' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h3 className="text-base font-bold text-gray-100 mb-1">Studio Interface Language & Localization</h3>
-                  <p className="text-xs text-gray-400">Select preferred language pack for studio menus, buttons, and tooltips</p>
+                  <h3 className="text-base font-bold text-gray-100 mb-1">Studio Interface Language & Regional Formats</h3>
+                  <p className="text-xs text-gray-400">Select from 20 supported language packs, RTL layouts, date formats, and currency units</p>
                 </div>
 
+                {/* Regional Preferences Bar */}
+                <div className="p-6 bg-[#14161b] border border-[#232733] rounded-3xl grid grid-cols-3 gap-6 text-xs text-gray-300">
+                  <div className="space-y-2">
+                    <label className="font-bold text-gray-200">Date Format</label>
+                    <select
+                      value={dateFormat}
+                      onChange={(e) => setDateFormat(e.target.value)}
+                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-indigo-400"
+                    >
+                      <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY (UK/EU)</option>
+                      <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-bold text-gray-200">Currency Symbol</label>
+                    <select
+                      value={currencySymbol}
+                      onChange={(e) => setCurrencySymbol(e.target.value)}
+                      className="w-full bg-[#0e0f12] border border-[#232733] rounded-xl px-3.5 py-2.5 font-mono text-indigo-400"
+                    >
+                      <option value="$">$ (USD)</option>
+                      <option value="₹">₹ (INR)</option>
+                      <option value="€">€ (EUR)</option>
+                      <option value="£">£ (GBP)</option>
+                      <option value="¥">¥ (JPY/CNY)</option>
+                      <option value="AED">AED (UAE Dirham)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 bg-[#0e0f12] border border-[#232733] rounded-xl mt-6">
+                    <span className="font-bold">Enable Right-to-Left (RTL) Layout</span>
+                    <input
+                      type="checkbox"
+                      checked={enableRtl}
+                      onChange={(e) => setEnableRtl(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* 20 Languages Grid */}
                 <div className="grid grid-cols-4 gap-4 text-xs">
-                  {[
-                    { code: 'en', name: 'English (US)', flag: '🇺🇸' },
-                    { code: 'hi', name: 'हिंदी (Hindi)', flag: '🇮🇳' },
-                    { code: 'es', name: 'Español (Spanish)', flag: '🇪🇸' },
-                    { code: 'fr', name: 'Français (French)', flag: '🇫🇷' },
-                    { code: 'de', name: 'Deutsch (German)', flag: '🇩🇪' },
-                    { code: 'ja', name: '日本語 (Japanese)', flag: '🇯🇵' },
-                    { code: 'zh', name: '中文 (Chinese)', flag: '🇨🇳' },
-                    { code: 'ar', name: 'العربية (Arabic)', flag: '🇸🇦' },
-                  ].map((l) => (
+                  {SUPPORTED_LANGUAGES.map((l) => (
                     <button
                       key={l.code}
-                      onClick={() => handleLangChange(l.code as SupportedLanguage)}
+                      onClick={() => handleLangChange(l.code)}
                       className={`p-5 rounded-2xl border text-left font-bold transition-all flex flex-col justify-between space-y-3 ${
                         currentLang === l.code
                           ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border-indigo-500 shadow-xl'
                           : 'bg-[#14161b] text-gray-300 border-[#232733] hover:border-gray-600'
                       }`}
                     >
-                      <span className="text-2xl">{l.flag}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl">{l.flag}</span>
+                        {l.isRtl && (
+                          <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-400 rounded text-[9px] font-mono">RTL</span>
+                        )}
+                      </div>
                       <div>
                         <div className="text-xs font-bold">{l.name}</div>
-                        <div className="text-[10px] opacity-70 font-mono uppercase">{l.code}</div>
+                        <div className="text-[11px] text-gray-400 font-normal">{l.nativeName}</div>
                       </div>
                     </button>
                   ))}
