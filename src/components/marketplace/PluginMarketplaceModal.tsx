@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Search, Star, Download, Check, X, ShieldCheck } from 'lucide-react';
 import { pluginMarketplace, type MarketplacePlugin } from '../../marketplace/PluginMarketplace';
 
@@ -7,9 +7,16 @@ export const PluginMarketplaceModal: React.FC<{ isOpen: boolean; onClose: () => 
   const [searchQuery, setSearchQuery] = useState('');
   const [plugins, setPlugins] = useState<MarketplacePlugin[]>(pluginMarketplace.getPlugins());
 
+  useEffect(() => {
+    const unsub = pluginMarketplace.subscribe(() => {
+      setPlugins(pluginMarketplace.getPlugins());
+    });
+    return () => unsub();
+  }, []);
+
   if (!isOpen) return null;
 
-  const categories = ['All', 'UI Components', 'Backend Nodes', 'Integrations', 'AI Models', 'Themes'];
+  const categories = ['All', 'UI Kits & Figma', 'Editor Extensions', 'Backend Connectors', 'AI & Copilots', 'Themes', 'DevOps & Cloud'];
 
   const filtered = plugins.filter((p) => {
     const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
@@ -32,7 +39,7 @@ export const PluginMarketplaceModal: React.FC<{ isOpen: boolean; onClose: () => 
               <Package size={20} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-100">VisualStack Plugin Marketplace</h2>
+              <h2 className="text-sm font-bold text-gray-100">VisualStack Plugin Marketplace SDK</h2>
               <p className="text-[11px] text-gray-400">Extend your studio with community & official SDK plugins</p>
             </div>
           </div>

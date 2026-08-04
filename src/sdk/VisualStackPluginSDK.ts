@@ -1,6 +1,7 @@
 import { ComponentRegistry } from '../features/designer/components/registry/ComponentRegistry';
 import { eventBus } from '../core/events/EventBus';
 import { commandManager } from '../core/commands/CommandManager';
+import { designSystemManager } from '../designsystem/DesignSystemManager';
 import type { ICommand } from '../core/commands/Command';
 
 export interface PluginManifest {
@@ -9,7 +10,7 @@ export interface PluginManifest {
   version: string;
   author: string;
   description: string;
-  category: 'UI Components' | 'Backend Nodes' | 'Integrations' | 'AI Models' | 'Themes';
+  category: 'UI Kits & Figma' | 'Editor Extensions' | 'Backend Connectors' | 'AI & Copilots' | 'Themes' | 'DevOps & Cloud';
   icon?: string;
 }
 
@@ -20,16 +21,16 @@ export class VisualStackPluginSDK {
     this.manifest = manifest;
   }
 
-  public registerComponent(name: string, category = 'Custom'): void {
+  public registerComponent(name: string, category = 'Custom Plugins'): void {
     ComponentRegistry.getInstance().registerComponent({
-      id: name,
+      id: `${this.manifest.id}_${name.toLowerCase().replace(/\s+/g, '_')}`,
       displayName: name,
-      description: `Custom plugin component ${name}`,
+      description: `Plugin component from ${this.manifest.name}`,
       category,
       icon: 'Package',
-      keywords: [name.toLowerCase(), 'plugin'],
-      defaultWidth: 120,
-      defaultHeight: 50,
+      keywords: [name.toLowerCase(), this.manifest.name.toLowerCase(), 'plugin'],
+      defaultWidth: 140,
+      defaultHeight: 60,
       minimumWidth: 40,
       minimumHeight: 20,
       supportsChildren: true,
@@ -50,6 +51,12 @@ export class VisualStackPluginSDK {
       undo: async () => {},
     };
     commandManager.executeCommand(cmd);
+  }
+
+  public registerTheme(_themeId: string, colors: Record<string, string>): void {
+    Object.entries(colors).forEach(([k, v]) => {
+      designSystemManager.updateColorToken(k, v);
+    });
   }
 
   public emitEvent(eventName: string, data: any): void {
