@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users } from 'lucide-react';
+import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users, Layout, MessageSquare, History, Palette, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useHistoryStore } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
@@ -12,6 +12,11 @@ import { AIChatPanel } from '../ai/AIChatPanel';
 import { AICommandPalette } from '../ai/AICommandPalette';
 import { ProjectSharingModal } from '../collaboration/ProjectSharingModal';
 import { CollaborationOverlay } from '../collaboration/CollaborationOverlay';
+import { CommentsPanel } from '../collaboration/CommentsPanel';
+import { VersionHistoryModal } from '../collaboration/VersionHistoryModal';
+import { TemplateManagerModal } from '../templates/TemplateManagerModal';
+import { DesignSystemModal } from '../designsystem/DesignSystemModal';
+import { PluginMarketplaceModal } from '../marketplace/PluginMarketplaceModal';
 import { collaborationManager } from '../../collaboration/CollaborationManager';
 
 export const TopToolbar: React.FC = () => {
@@ -19,10 +24,17 @@ export const TopToolbar: React.FC = () => {
   const { canUndo, canRedo } = useHistoryStore();
   const { selectedComponentIds } = useSelectionStore();
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+  // Modals state
   const [isCodeInspectorOpen, setIsCodeInspectorOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isAiCommandPaletteOpen, setIsAiCommandPaletteOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = useState(false);
+  const [isDesignTokensOpen, setIsDesignTokensOpen] = useState(false);
+  const [isPluginMarketplaceOpen, setIsPluginMarketplaceOpen] = useState(false);
 
   const activeSessions = collaborationManager.sessions.getActiveSessions();
 
@@ -46,25 +58,15 @@ export const TopToolbar: React.FC = () => {
     <>
       <CollaborationOverlay />
 
-      <CodeInspectorModal
-        isOpen={isCodeInspectorOpen}
-        onClose={() => setIsCodeInspectorOpen(false)}
-      />
-
-      <AIChatPanel
-        isOpen={isAiChatOpen}
-        onClose={() => setIsAiChatOpen(false)}
-      />
-
-      <AICommandPalette
-        isOpen={isAiCommandPaletteOpen}
-        onClose={() => setIsAiCommandPaletteOpen(false)}
-      />
-
-      <ProjectSharingModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-      />
+      <CodeInspectorModal isOpen={isCodeInspectorOpen} onClose={() => setIsCodeInspectorOpen(false)} />
+      <AIChatPanel isOpen={isAiChatOpen} onClose={() => setIsAiChatOpen(false)} />
+      <AICommandPalette isOpen={isAiCommandPaletteOpen} onClose={() => setIsAiCommandPaletteOpen(false)} />
+      <ProjectSharingModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />
+      <CommentsPanel isOpen={isCommentsOpen} onClose={() => setIsCommentsOpen(false)} />
+      <VersionHistoryModal isOpen={isVersionHistoryOpen} onClose={() => setIsVersionHistoryOpen(false)} />
+      <TemplateManagerModal isOpen={isTemplateGalleryOpen} onClose={() => setIsTemplateGalleryOpen(false)} />
+      <DesignSystemModal isOpen={isDesignTokensOpen} onClose={() => setIsDesignTokensOpen(false)} />
+      <PluginMarketplaceModal isOpen={isPluginMarketplaceOpen} onClose={() => setIsPluginMarketplaceOpen(false)} />
 
       <div className="h-9 bg-[#0e0f12] border-b border-[#232733] flex items-center justify-between px-3 text-xs text-gray-300 select-none z-20">
         {/* Left: Branding & Project Title */}
@@ -82,25 +84,13 @@ export const TopToolbar: React.FC = () => {
           )}
         </div>
 
-        {/* Center: History Controls, Device Preview Switcher & FPS */}
-        <div className="flex items-center gap-3">
+        {/* Center: History Controls, Device Preview Switcher & Modals Triggers */}
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5 border-r border-[#232733] pr-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={!canUndo}
-              onClick={() => commandManager.undo()}
-              title="Undo (Ctrl+Z)"
-            >
+            <Button variant="ghost" size="icon" disabled={!canUndo} onClick={() => commandManager.undo()} title="Undo (Ctrl+Z)">
               <Undo2 size={13} />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={!canRedo}
-              onClick={() => commandManager.redo()}
-              title="Redo (Ctrl+Y)"
-            >
+            <Button variant="ghost" size="icon" disabled={!canRedo} onClick={() => commandManager.redo()} title="Redo (Ctrl+Y)">
               <Redo2 size={13} />
             </Button>
           </div>
@@ -129,6 +119,52 @@ export const TopToolbar: React.FC = () => {
             </button>
           </div>
 
+          {/* Enterprise Modal Action Triggers */}
+          <button
+            onClick={() => setIsTemplateGalleryOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-indigo-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open 16+ Project Template Gallery"
+          >
+            <Layout size={13} />
+            <span>Templates</span>
+          </button>
+
+          <button
+            onClick={() => setIsCommentsOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-amber-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open Threaded Comments Drawer"
+          >
+            <MessageSquare size={13} />
+            <span>Comments</span>
+          </button>
+
+          <button
+            onClick={() => setIsVersionHistoryOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-blue-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open Version History Checkpoint Timeline"
+          >
+            <History size={13} />
+            <span>Checkpoints</span>
+          </button>
+
+          <button
+            onClick={() => setIsDesignTokensOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-rose-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open Design System Tokens Editor"
+          >
+            <Palette size={13} />
+            <span>Tokens</span>
+          </button>
+
+          <button
+            onClick={() => setIsPluginMarketplaceOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-purple-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Open VisualStack Plugin Marketplace"
+          >
+            <Package size={13} />
+            <span>Plugins</span>
+          </button>
+
           <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-[#14161b] px-2 py-0.5 rounded border border-[#232733]">
             <Activity size={12} />
             <span>60 FPS</span>
@@ -137,7 +173,6 @@ export const TopToolbar: React.FC = () => {
 
         {/* Right: Actions, Share Team & AI Triggers */}
         <div className="flex items-center gap-1.5">
-          {/* Active Collaborators Presence Badge */}
           <button
             onClick={() => setIsShareModalOpen(true)}
             className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-emerald-400 border border-[#232733] rounded text-xs font-semibold transition-colors"
