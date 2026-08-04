@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command } from 'lucide-react';
+import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useHistoryStore } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
@@ -10,6 +10,9 @@ import { cn } from '../../utils/cn';
 import { CodeInspectorModal } from './CodeInspectorModal';
 import { AIChatPanel } from '../ai/AIChatPanel';
 import { AICommandPalette } from '../ai/AICommandPalette';
+import { ProjectSharingModal } from '../collaboration/ProjectSharingModal';
+import { CollaborationOverlay } from '../collaboration/CollaborationOverlay';
+import { collaborationManager } from '../../collaboration/CollaborationManager';
 
 export const TopToolbar: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +22,9 @@ export const TopToolbar: React.FC = () => {
   const [isCodeInspectorOpen, setIsCodeInspectorOpen] = useState(false);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [isAiCommandPaletteOpen, setIsAiCommandPaletteOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  const activeSessions = collaborationManager.sessions.getActiveSessions();
 
   const handleSave = () => {
     notificationService.success('Project saved (.vstack format)');
@@ -38,6 +44,8 @@ export const TopToolbar: React.FC = () => {
 
   return (
     <>
+      <CollaborationOverlay />
+
       <CodeInspectorModal
         isOpen={isCodeInspectorOpen}
         onClose={() => setIsCodeInspectorOpen(false)}
@@ -51,6 +59,11 @@ export const TopToolbar: React.FC = () => {
       <AICommandPalette
         isOpen={isAiCommandPaletteOpen}
         onClose={() => setIsAiCommandPaletteOpen(false)}
+      />
+
+      <ProjectSharingModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
       />
 
       <div className="h-9 bg-[#0e0f12] border-b border-[#232733] flex items-center justify-between px-3 text-xs text-gray-300 select-none z-20">
@@ -122,8 +135,18 @@ export const TopToolbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Actions & AI Triggers */}
+        {/* Right: Actions, Share Team & AI Triggers */}
         <div className="flex items-center gap-1.5">
+          {/* Active Collaborators Presence Badge */}
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-emerald-400 border border-[#232733] rounded text-xs font-semibold transition-colors"
+            title="Team Collaboration & Share Project"
+          >
+            <Users size={13} />
+            <span>Share ({activeSessions.length})</span>
+          </button>
+
           <Button
             variant="ghost"
             size="sm"
