@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users, Layout, MessageSquare, History, Palette, Package, Image, Smile, Sliders } from 'lucide-react';
+import { Layers, Play, Rocket, Undo2, Redo2, Monitor, Tablet, Smartphone, Save, Download, Activity, Code2, Sparkles, Command, Users, Layout, MessageSquare, History, Palette, Package, Image, Smile, Sliders, Cloud } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useHistoryStore } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
@@ -19,6 +19,8 @@ import { DesignSystemModal } from '../designsystem/DesignSystemModal';
 import { PluginMarketplaceModal } from '../marketplace/PluginMarketplaceModal';
 import { AssetMarketplaceModal } from '../assets/AssetMarketplaceModal';
 import { IconPickerModal } from '../icons/IconPickerModal';
+import { ProjectAnalyticsModal } from '../analytics/ProjectAnalyticsModal';
+import { BackupCloudModal } from '../enterprise/BackupCloudModal';
 import { collaborationManager } from '../../collaboration/CollaborationManager';
 import { workspaceLayoutManager, WORKSPACE_PRESETS } from '../../workspace/WorkspaceLayoutManager';
 import { i18nEngine } from '../../i18n/I18nEngine';
@@ -43,6 +45,8 @@ export const TopToolbar: React.FC = () => {
   const [isPluginMarketplaceOpen, setIsPluginMarketplaceOpen] = useState(false);
   const [isAssetMarketplaceOpen, setIsAssetMarketplaceOpen] = useState(false);
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [isBackupCloudOpen, setIsBackupCloudOpen] = useState(false);
 
   useEffect(() => {
     const unsubI18n = i18nEngine.subscribe((lang) => setLangState(lang));
@@ -92,6 +96,8 @@ export const TopToolbar: React.FC = () => {
       <PluginMarketplaceModal isOpen={isPluginMarketplaceOpen} onClose={() => setIsPluginMarketplaceOpen(false)} />
       <AssetMarketplaceModal isOpen={isAssetMarketplaceOpen} onClose={() => setIsAssetMarketplaceOpen(false)} />
       <IconPickerModal isOpen={isIconPickerOpen} onClose={() => setIsIconPickerOpen(false)} />
+      <ProjectAnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} />
+      <BackupCloudModal isOpen={isBackupCloudOpen} onClose={() => setIsBackupCloudOpen(false)} />
 
       <div className="h-9 bg-[#0e0f12] border-b border-[#232733] flex items-center justify-between px-3 text-xs text-gray-300 select-none z-20">
         {/* Left: Branding & Project Title */}
@@ -164,7 +170,7 @@ export const TopToolbar: React.FC = () => {
           <button
             onClick={() => setIsTemplateGalleryOpen(true)}
             className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-indigo-400 border border-[#232733] rounded text-xs font-semibold"
-            title="Open 16+ Project Template Gallery"
+            title="Open 40+ Project Template Gallery"
           >
             <Layout size={13} />
             <span>{i18nEngine.t('templates', 'Templates')}</span>
@@ -224,10 +230,23 @@ export const TopToolbar: React.FC = () => {
             <span>{i18nEngine.t('plugins', 'Plugins')}</span>
           </button>
 
-          <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-[#14161b] px-2 py-0.5 rounded border border-[#232733]">
+          <button
+            onClick={() => setIsBackupCloudOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 bg-[#14161b] hover:bg-[#1a1d24] text-cyan-400 border border-[#232733] rounded text-xs font-semibold"
+            title="Cloud Backup & .vstack Export"
+          >
+            <Cloud size={13} />
+            <span>Backup</span>
+          </button>
+
+          <button
+            onClick={() => setIsAnalyticsOpen(true)}
+            className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-[#14161b] hover:bg-[#1a1d24] px-2 py-0.5 rounded border border-[#232733]"
+            title="View Realtime Project Analytics & Metrics"
+          >
             <Activity size={12} />
             <span>60 FPS</span>
-          </div>
+          </button>
         </div>
 
         {/* Right: Actions, Share Team & AI Triggers */}

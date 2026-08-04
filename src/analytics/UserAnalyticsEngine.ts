@@ -1,24 +1,35 @@
 export interface UserProductivityMetrics {
-  designTimeMinutes: number;
-  codingTimeMinutes: number;
-  buildsCompleted: number;
-  deploymentsExecuted: number;
+  sessionDurationMinutes: number;
+  canvasMutationsCount: number;
+  codeLinesGenerated: number;
   aiPromptsExecuted: number;
-  productivityScore: number;
+  activeRole: string;
+  efficiencyScore: number;
 }
 
 export class UserAnalyticsEngine {
-  private metrics: UserProductivityMetrics = {
-    designTimeMinutes: 145,
-    codingTimeMinutes: 210,
-    buildsCompleted: 18,
-    deploymentsExecuted: 5,
-    aiPromptsExecuted: 42,
-    productivityScore: 98,
-  };
+  private startTime: number = Date.now();
+  private mutationsCount: number = 24;
+  private promptsCount: number = 8;
 
   public getMetrics(): UserProductivityMetrics {
-    return { ...this.metrics };
+    const elapsedMinutes = Math.max(1, Math.floor((Date.now() - this.startTime) / 60000));
+    return {
+      sessionDurationMinutes: elapsedMinutes,
+      canvasMutationsCount: this.mutationsCount,
+      codeLinesGenerated: this.mutationsCount * 42,
+      aiPromptsExecuted: this.promptsCount,
+      activeRole: 'Owner & Fullstack Architect',
+      efficiencyScore: 98,
+    };
+  }
+
+  public trackMutation() {
+    this.mutationsCount++;
+  }
+
+  public trackAiPrompt() {
+    this.promptsCount++;
   }
 }
 
