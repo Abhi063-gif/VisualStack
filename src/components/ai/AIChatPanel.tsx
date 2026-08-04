@@ -5,8 +5,7 @@ import { aiModelManager } from '../../ai/models/AIModelManager';
 import { aiSecurityFilter } from '../../ai/security/AISecurityFilter';
 import { contextEngine } from '../../ai/core/ContextEngine';
 import { toolCallingEngine } from '../../ai/tools/ToolCallingEngine';
-import { visualDesignAssistant } from '../../ai/services/VisualDesignAssistant';
-import { backendAI } from '../../ai/services/BackendAI';
+import { aiPromptEngine } from '../../ai/services/AIPromptEngine';
 
 export interface ChatMessage {
   id: string;
@@ -22,7 +21,7 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     {
       id: 'msg_welcome',
       sender: 'assistant',
-      content: 'Hello! I am **VisualStack AI Assistant**. How can I help you build UI designs, backend logic, or deploy your application today?',
+      content: 'Hello! I am **VisualStack AI Assistant**. Ask me to design any page layout, theme, auth, e-commerce, or backend logic workflow in natural language!',
       timestamp: new Date().toLocaleTimeString(),
     },
   ]);
@@ -68,28 +67,18 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     const sanitizedInput = aiSecurityFilter.sanitizePrompt(text);
     const systemContext = contextEngine.getSystemPromptWithContext(sanitizedInput);
 
-    // Fullstack AI tool detection and execution
+    // Dynamic AI Prompt Execution Engine
     let toolResultText = '';
     const lowerText = text.toLowerCase();
 
-    if (lowerText.includes('landing page') || lowerText.includes('landing')) {
-      const uiRes = visualDesignAssistant.createLandingPage();
-      const backendRes = backendAI.generateAuthWorkflowNodes();
-      toolResultText = `${uiRes} | ${backendRes}`;
-    } else if (lowerText.includes('login') || lowerText.includes('auth')) {
-      const uiRes = visualDesignAssistant.createLoginScreen();
-      const backendRes = backendAI.generateAuthWorkflowNodes();
-      toolResultText = `${uiRes} | ${backendRes}`;
-    } else if (lowerText.includes('dashboard') || lowerText.includes('crm')) {
-      const uiRes = visualDesignAssistant.createCRMDashboard();
-      const backendRes = backendAI.generateAuthWorkflowNodes();
-      toolResultText = `${uiRes} | ${backendRes}`;
-    } else if (lowerText.includes('commit') || lowerText.includes('push')) {
+    if (lowerText.includes('commit') || lowerText.includes('push')) {
       toolResultText = await toolCallingEngine.executeToolCall('git_commit', { message: text, isAmend: false });
     } else if (lowerText.includes('deploy')) {
       toolResultText = await toolCallingEngine.executeToolCall('deploy_app', { provider: 'vercel', environment: 'production' });
     } else if (lowerText.includes('container') || lowerText.includes('docker')) {
       toolResultText = await toolCallingEngine.executeToolCall('build_docker_container', { name: 'visualstack-app', ports: '8080:8080' });
+    } else {
+      toolResultText = aiPromptEngine.executePrompt(text);
     }
 
     if (provider) {
@@ -240,12 +229,11 @@ export const AIChatPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = (
       {/* Prompt Suggestions Chips */}
       <div className="px-4 py-2 bg-[#0e0f12] border-t border-[#232733] flex items-center gap-2 overflow-x-auto custom-scrollbar text-[11px]">
         {[
-          'Create Landing Page',
+          'E-Commerce Storefront (Light Theme)',
           'Create Login Page',
           'Create CRM Dashboard',
           'Deploy to Vercel',
           'Commit Changes to Git',
-          'Build Docker Container',
         ].map((chip) => (
           <button
             key={chip}

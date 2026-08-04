@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Sparkles, Command, ArrowRight, X } from 'lucide-react';
 import { toolCallingEngine } from '../../ai/tools/ToolCallingEngine';
-import { visualDesignAssistant } from '../../ai/services/VisualDesignAssistant';
+import { aiPromptEngine } from '../../ai/services/AIPromptEngine';
 
 export interface AICommandItem {
   id: string;
@@ -16,9 +16,9 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
   const [executedToast, setExecutedToast] = useState<string | null>(null);
 
   const commands: AICommandItem[] = [
-    { id: 'cmd_1', title: 'Generate SaaS Landing Page', category: 'ui', action: 'create_landing', description: 'Creates viewport frame, hero navbar, title, buttons, and feature cards' },
-    { id: 'cmd_2', title: 'Build Fullstack Auth Screen & Workflow', category: 'backend', action: 'create_auth', description: 'Creates login card, heading, email/password inputs, and auth button' },
-    { id: 'cmd_3', title: 'Generate CRM Dashboard Layout', category: 'ui', action: 'create_crm', description: 'Creates sidebar navigation, navbar, and analytics metric cards' },
+    { id: 'cmd_1', title: 'Generate E-Commerce Storefront (Light Theme)', category: 'ui', action: 'create_ecommerce_light', description: 'Creates E-Commerce Page, Navbar, Search, Sale Banner, Product Cards & Stripe Checkout Graph' },
+    { id: 'cmd_2', title: 'Build Fullstack Auth Screen & Workflow', category: 'backend', action: 'create_auth', description: 'Creates Auth Page, login card, email/password inputs, and JWT Auth Graph' },
+    { id: 'cmd_3', title: 'Generate CRM Dashboard Layout', category: 'ui', action: 'create_crm', description: 'Creates Dashboard Page, sidebar navigation, navbar, and analytics metric cards' },
     { id: 'cmd_4', title: 'Commit & Push Changes to Remote Git', category: 'git', action: 'git_sync', description: 'Stages all uncommitted files and pushes to origin main' },
     { id: 'cmd_5', title: 'Deploy Project to Vercel Production', category: 'devops', action: 'deploy_vercel', description: 'Runs 1-click cloud deployment pipeline to Vercel' },
     { id: 'cmd_6', title: 'Build & Run Docker Container', category: 'devops', action: 'docker_run', description: 'Generates multi-stage Dockerfile and starts container' },
@@ -41,12 +41,12 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
 
   const handleExecuteCommand = async (cmd: AICommandItem) => {
     let result = '';
-    if (cmd.action === 'create_landing') {
-      result = visualDesignAssistant.createLandingPage();
+    if (cmd.action === 'create_ecommerce_light') {
+      result = aiPromptEngine.executePrompt('make it an attractive e-commerce website landing page with light colors and theme');
     } else if (cmd.action === 'create_auth') {
-      result = visualDesignAssistant.createLoginScreen();
+      result = aiPromptEngine.executePrompt('create login auth page');
     } else if (cmd.action === 'create_crm') {
-      result = visualDesignAssistant.createCRMDashboard();
+      result = aiPromptEngine.executePrompt('create CRM dashboard');
     } else if (cmd.action === 'git_sync') {
       result = await toolCallingEngine.executeToolCall('git_commit', { message: 'feat: AI Spotlight Command execute', isAmend: false });
     } else if (cmd.action === 'deploy_vercel') {
@@ -54,7 +54,7 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
     } else if (cmd.action === 'docker_run') {
       result = await toolCallingEngine.executeToolCall('build_docker_container', { name: 'visualstack-spotlight', ports: '8080:8080' });
     } else {
-      result = `[AI Command] Executed "${cmd.title}" successfully.`;
+      result = aiPromptEngine.executePrompt(cmd.title);
     }
 
     setExecutedToast(result);
@@ -74,7 +74,7 @@ export const AICommandPalette: React.FC<{ isOpen: boolean; onClose: () => void }
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type an AI command (e.g. Create Landing Page, Create Login, Deploy, Push Git)..."
+            placeholder="Type an AI command (e.g. E-Commerce Light Theme, Login, Deploy, Push Git)..."
             className="w-full bg-transparent text-sm text-gray-200 placeholder-gray-500 outline-none font-sans"
             autoFocus
           />
